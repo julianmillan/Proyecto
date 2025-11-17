@@ -1,0 +1,66 @@
+---
+// Seat selector component
+---
+
+<div class="bg-dark-light rounded-xl p-6">
+  <h3 class="text-xl font-bold text-white mb-4">Selecciona tu asiento</h3>
+  
+  <div class="max-w-md mx-auto">
+    <div class="mb-6">
+      <label class="block text-gray-400 mb-2">Fila</label>
+      <select 
+        id="fila-select"
+        class="w-full bg-dark border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-primary outline-none"
+      >
+        <option value="">Selecciona una fila</option>
+        {Array.from({ length: 20 }, (_, i) => (
+          <option value={String.fromCharCode(65 + i)}>{String.fromCharCode(65 + i)}</option>
+        ))}
+      </select>
+    </div>
+    
+    <div class="mb-6">
+      <label class="block text-gray-400 mb-2">Número de asiento</label>
+      <select 
+        id="numero-select"
+        class="w-full bg-dark border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-primary outline-none"
+      >
+        <option value="">Selecciona un número</option>
+        {Array.from({ length: 30 }, (_, i) => (
+          <option value={i + 1}>{i + 1}</option>
+        ))}
+      </select>
+    </div>
+    
+    <div id="silla-preview" class="hidden bg-primary/10 border border-primary rounded-lg p-4">
+      <p class="text-white">
+        Asiento seleccionado: <span id="silla-info" class="font-bold"></span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const filaSelect = document.getElementById('fila-select') as HTMLSelectElement;
+  const numeroSelect = document.getElementById('numero-select') as HTMLSelectElement;
+  const sillaPreview = document.getElementById('silla-preview');
+  const sillaInfo = document.getElementById('silla-info');
+  
+  function updatePreview() {
+    const fila = filaSelect?.value;
+    const numero = numeroSelect?.value;
+    
+    if (fila && numero && sillaInfo && sillaPreview) {
+      sillaInfo.textContent = `${fila}${numero}`;
+      sillaPreview.classList.remove('hidden');
+      
+      // Dispatch event
+      window.dispatchEvent(new CustomEvent('silla-selected', {
+        detail: { fila, numero }
+      }));
+    }
+  }
+  
+  filaSelect?.addEventListener('change', updatePreview);
+  numeroSelect?.addEventListener('change', updatePreview);
+</script>

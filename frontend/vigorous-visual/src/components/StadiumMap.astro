@@ -1,0 +1,117 @@
+---
+// Stadium map component - interactive seat selection
+---
+
+<div class="bg-dark-light rounded-xl p-6">
+  <h3 class="text-xl font-bold text-white mb-4">Selecciona tu zona</h3>
+  
+  <div class="relative max-w-2xl mx-auto">
+    <!-- Campo de fútbol -->
+    <div class="bg-green-700 rounded-lg p-4 mb-4">
+      <div class="border-2 border-white/30 rounded h-64 flex items-center justify-center">
+        <div class="text-white/50 text-6xl">⚽</div>
+      </div>
+    </div>
+    
+    <!-- Zonas del estadio -->
+    <div class="grid grid-cols-3 gap-4 mt-6">
+      <button 
+        class="zona-btn bg-blue-600/20 hover:bg-blue-600/40 border-2 border-blue-600 rounded-lg p-4 transition"
+        data-zona="Norte"
+        data-precio="50000"
+      >
+        <div class="text-center">
+          <div class="text-white font-bold">Norte</div>
+          <div class="text-blue-400 text-sm">$50,000</div>
+        </div>
+      </button>
+      
+      <button 
+        class="zona-btn bg-yellow-600/20 hover:bg-yellow-600/40 border-2 border-yellow-600 rounded-lg p-4 transition"
+        data-zona="Palco"
+        data-precio="150000"
+      >
+        <div class="text-center">
+          <div class="text-white font-bold">Palco VIP</div>
+          <div class="text-yellow-400 text-sm">$150,000</div>
+        </div>
+      </button>
+      
+      <button 
+        class="zona-btn bg-blue-600/20 hover:bg-blue-600/40 border-2 border-blue-600 rounded-lg p-4 transition"
+        data-zona="Sur"
+        data-precio="50000"
+      >
+        <div class="text-center">
+          <div class="text-white font-bold">Sur</div>
+          <div class="text-blue-400 text-sm">$50,000</div>
+        </div>
+      </button>
+      
+      <button 
+        class="zona-btn bg-green-600/20 hover:bg-green-600/40 border-2 border-green-600 rounded-lg p-4 transition"
+        data-zona="Occidental"
+        data-precio="75000"
+      >
+        <div class="text-center">
+          <div class="text-white font-bold">Occidental</div>
+          <div class="text-green-400 text-sm">$75,000</div>
+        </div>
+      </button>
+      
+      <div class="flex items-center justify-center">
+        <div class="text-gray-500 text-sm">Vista desde arriba</div>
+      </div>
+      
+      <button 
+        class="zona-btn bg-green-600/20 hover:bg-green-600/40 border-2 border-green-600 rounded-lg p-4 transition"
+        data-zona="Oriental"
+        data-precio="75000"
+      >
+        <div class="text-center">
+          <div class="text-white font-bold">Oriental</div>
+          <div class="text-green-400 text-sm">$75,000</div>
+        </div>
+      </button>
+    </div>
+    
+    <div id="zona-selected" class="mt-6 text-center text-gray-400 hidden">
+      <p>Zona seleccionada: <span id="zona-nombre" class="text-primary font-bold"></span></p>
+      <p>Precio: <span id="zona-precio" class="text-white font-bold"></span></p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const zonaBtns = document.querySelectorAll('.zona-btn');
+  const zonaSelected = document.getElementById('zona-selected');
+  const zonaNombre = document.getElementById('zona-nombre');
+  const zonaPrecio = document.getElementById('zona-precio');
+  
+  let selectedZona = '';
+  let selectedPrecio = 0;
+  
+  zonaBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Remove active class from all
+      zonaBtns.forEach(b => b.classList.remove('ring-4', 'ring-primary'));
+      
+      // Add active to clicked
+      btn.classList.add('ring-4', 'ring-primary');
+      
+      selectedZona = btn.getAttribute('data-zona') || '';
+      selectedPrecio = parseInt(btn.getAttribute('data-precio') || '0');
+      
+      if (zonaNombre && zonaPrecio && zonaSelected) {
+        zonaNombre.textContent = selectedZona;
+        zonaPrecio.textContent = `$${selectedPrecio.toLocaleString()}`;
+        zonaSelected.classList.remove('hidden');
+      }
+      
+      // Dispatch custom event
+      window.dispatchEvent(new CustomEvent('zona-selected', {
+        detail: { zona: selectedZona, precio: selectedPrecio }
+      }));
+    });
+  });
+</script>

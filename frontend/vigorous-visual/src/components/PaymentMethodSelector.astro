@@ -1,0 +1,101 @@
+---
+// Payment method selector
+---
+
+<div class="bg-dark-light rounded-xl p-6">
+  <h3 class="text-xl font-bold text-white mb-4">Método de pago</h3>
+  
+  <div class="space-y-4">
+    <label class="flex items-center p-4 border-2 border-gray-700 rounded-lg cursor-pointer hover:border-primary transition payment-option">
+      <input 
+        type="radio" 
+        name="payment" 
+        value="tarjeta" 
+        class="w-5 h-5 text-primary"
+      />
+      <div class="ml-4 flex-1">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+          <span class="text-white font-semibold">Tarjeta de crédito/débito</span>
+        </div>
+      </div>
+    </label>
+    
+    <label class="flex items-center p-4 border-2 border-gray-700 rounded-lg cursor-pointer hover:border-primary transition payment-option">
+      <input 
+        type="radio" 
+        name="payment" 
+        value="pse" 
+        class="w-5 h-5 text-primary"
+      />
+      <div class="ml-4 flex-1">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="text-white font-semibold">PSE</span>
+        </div>
+      </div>
+    </label>
+    
+    <label class="flex items-center p-4 border-2 border-gray-700 rounded-lg cursor-pointer hover:border-primary transition payment-option">
+      <input 
+        type="radio" 
+        name="payment" 
+        value="efectivo" 
+        class="w-5 h-5 text-primary"
+      />
+      <div class="ml-4 flex-1">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <span class="text-white font-semibold">Efectivo (Punto físico)</span>
+        </div>
+      </div>
+    </label>
+  </div>
+  
+  <div id="payment-selected" class="hidden mt-6 text-center">
+    <p class="text-gray-400">Método seleccionado: <span id="payment-method" class="text-primary font-bold"></span></p>
+  </div>
+</div>
+
+<script>
+  const paymentOptions = document.querySelectorAll('input[name="payment"]');
+  const paymentSelected = document.getElementById('payment-selected');
+  const paymentMethod = document.getElementById('payment-method');
+  
+  paymentOptions.forEach(option => {
+    option.addEventListener('change', (e) => {
+      const target = e.target as HTMLInputElement;
+      const value = target.value;
+      
+      // Update labels
+      document.querySelectorAll('.payment-option').forEach(label => {
+        label.classList.remove('border-primary', 'bg-primary/5');
+      });
+      
+      const selectedLabel = target.closest('.payment-option');
+      selectedLabel?.classList.add('border-primary', 'bg-primary/5');
+      
+      if (paymentMethod && paymentSelected) {
+        const methodNames: Record<string, string> = {
+          'tarjeta': 'Tarjeta',
+          'pse': 'PSE',
+          'efectivo': 'Efectivo'
+        };
+        
+        paymentMethod.textContent = methodNames[value] || value;
+        paymentSelected.classList.remove('hidden');
+      }
+      
+      // Dispatch event
+      window.dispatchEvent(new CustomEvent('payment-selected', {
+        detail: { method: value }
+      }));
+    });
+  });
+</script>

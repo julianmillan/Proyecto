@@ -1,0 +1,139 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import PartidoCard from '../components/PartidoCard.astro';
+---
+
+<Layout title="Partidos - EstadioApp">
+  <div class="min-h-screen bg-dark">
+    <Navbar />
+    
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Hero Section -->
+      <div class="mb-12">
+        <h1 class="text-4xl font-bold text-white mb-2">Próximos Partidos</h1>
+        <p class="text-gray-400">Selecciona el partido y reserva tu lugar</p>
+      </div>
+      
+      <!-- Filters -->
+      <div class="flex gap-4 mb-8">
+        <button class="bg-primary text-white px-6 py-2 rounded-lg font-semibold">
+          Todos
+        </button>
+        <button class="bg-dark-light text-gray-400 hover:text-white px-6 py-2 rounded-lg transition">
+          Esta semana
+        </button>
+        <button class="bg-dark-light text-gray-400 hover:text-white px-6 py-2 rounded-lg transition">
+          Próximo mes
+        </button>
+      </div>
+      
+      <!-- Partidos Grid -->
+      <div id="partidos-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="col-span-full text-center py-12">
+          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p class="text-gray-400 mt-4">Cargando partidos...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</Layout>
+
+<script>
+  import { fetchAPI, isAuthenticated } from '../lib/api';
+  
+  // Verificar autenticación
+  if (!isAuthenticated()) {
+    window.location.href = '/login';
+  }
+  
+  // Cargar partidos
+  async function loadPartidos() {
+    try {
+      const partidos = await fetchAPI('/partidos');
+      const container = document.getElementById('partidos-container');
+      
+      if (!container) return;
+      
+      if (partidos.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full text-center py-12">
+            <p class="text-gray-400">No hay partidos disponibles</p>
+          </div>
+        `;
+        return;
+      }
+      
+      container.innerHTML = partidos.map((partido: any) => `
+        <div class="bg-dark-light rounded-xl overflow-hidden hover:scale-105 transition-transform duration-300 shadow-lg">
+          <div class="relative h-48">
+            <img 
+              src="${partido.imagen || 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800'}" 
+              alt="${partido.equipo_local} vs ${partido.equipo_visitante}"
+              class="w-full h-full object-cover"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+            <div class="absolute bottom-4 left-4 right-4">
+              <h3 class="text-2xl font-bold text-white">
+                ${partido.equipo_local} <span class="text-primary">vs</span> ${partido.equipo_visitante}
+              </h3>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div class="space-y-3 mb-6">
+              <div class="flex items-center text-gray-300">
+                <svg class="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>${new Date(partido.fecha).toLocaleDateString('es-ES')}</span>
+              </div>
+              
+              <div class="flex items-center text-gray-300">
+                <svg class="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>${partido.hora}</span>
+              </div>
+              
+              <div class="flex items-center text-gray-300">
+                <svg class="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>${partido.estadio?.nombre || 'Estadio'}, ${partido.estadio?.ciudad || ''}</span>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-gray-400 text-sm">Desde</p>
+                <p class="text-2xl font-bold text-primary">$${partido.precio_base?.toLocaleString() || '0'}</p>
+              </div>
+              
+              <a 
+                href="/comprar/${partido._id}"
+                class="bg-primary hover:bg-sky-600 text-white px-6 py-2 rounded-lg font-semibold transition"
+              >
+                Comprar
+              </a>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      
+    } catch (error) {
+      console.error('Error cargando partidos:', error);
+      const container = document.getElementById('partidos-container');
+      if (container) {
+        container.innerHTML = `
+          <div class="col-span-full text-center py-12">
+            <p class="text-red-500">Error al cargar los partidos</p>
+          </div>
+        `;
+      }
+    }
+  }
+  
+  loadPartidos();
+</script>

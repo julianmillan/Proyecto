@@ -1,0 +1,118 @@
+---
+interface Props {
+  boleta: {
+    _id: string;
+    partido: {
+      equipo_local: string;
+      equipo_visitante: string;
+      fecha: string;
+      hora: string;
+    };
+    silla: {
+      numero: string;
+      fila: string;
+      localidad: {
+        nombre: string;
+      };
+    };
+    precio_total: number;
+    estado: 'activa' | 'usada' | 'cancelada';
+    codigo_qr: string;
+    fecha_compra: string;
+  };
+}
+
+const { boleta } = Astro.props;
+
+const estadoColors: Record<string, string> = {
+  'activa': 'bg-green-600',
+  'usada': 'bg-gray-600',
+  'cancelada': 'bg-red-600'
+};
+
+const estadoColor = estadoColors[boleta.estado] || 'bg-gray-600';
+---
+
+<div class="bg-dark-light rounded-xl p-6 border-l-4 border-primary">
+  <div class="flex justify-between items-start mb-4">
+    <div>
+      <h3 class="text-xl font-bold text-white">
+        {boleta.partido.equipo_local} vs {boleta.partido.equipo_visitante}
+      </h3>
+      <p class="text-gray-400 text-sm">
+        {new Date(boleta.partido.fecha).toLocaleDateString('es-ES')} - {boleta.partido.hora}
+      </p>
+    </div>
+    <span class={`${estadoColor} text-white text-xs px-3 py-1 rounded-full`}>
+      {boleta.estado.toUpperCase()}
+    </span>
+  </div>
+  
+  <div class="grid grid-cols-2 gap-4 mb-4">
+    <div>
+      <p class="text-gray-400 text-sm">Localidad</p>
+      <p class="text-white font-semibold">{boleta.silla.localidad.nombre}</p>
+    </div>
+    <div>
+      <p class="text-gray-400 text-sm">Asiento</p>
+      <p class="text-white font-semibold">Fila {boleta.silla.fila} - #{boleta.silla.numero}</p>
+    </div>
+    <div>
+      <p class="text-gray-400 text-sm">Precio</p>
+      <p class="text-primary font-bold text-lg">${boleta.precio_total.toLocaleString()}</p>
+    </div>
+    <div>
+      <p class="text-gray-400 text-sm">Fecha de compra</p>
+      <p class="text-white">{new Date(boleta.fecha_compra).toLocaleDateString('es-ES')}</p>
+    </div>
+  </div>
+  
+  {boleta.estado === 'activa' && (
+    <div class="mt-4 space-y-3">
+      <div class="bg-white p-4 rounded-lg">
+        <p class="text-gray-600 text-xs text-center mb-2">Código QR</p>
+        <div class="flex justify-center">
+          <img 
+            class="qr-image" 
+            data-qr={boleta.codigo_qr}
+            alt="Código QR"
+          />
+        </div>
+        <p class="text-gray-500 text-xs text-center mt-2">{boleta.codigo_qr}</p>
+      </div>
+      <button 
+        class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg transition"
+        data-boleta-id={boleta._id}
+      >
+        Cancelar Boleta
+      </button>
+    </div>
+  )}
+</div>
+
+<script is:inline src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const images = document.querySelectorAll('.qr-image');
+    
+    images.forEach((img) => {
+      const qrData = img.getAttribute('data-qr');
+      if (qrData) {
+        // @ts-ignore - QRCode está disponible globalmente
+        QRCode.toDataURL(qrData, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#0A0A0A',
+            light: '#FFFFFF'
+          }
+        }).then((url: string) => {
+          img.setAttribute('src', url);
+        }).catch((err: Error) => {
+          console.error('Error generando QR:', err);
+        });
+      }
+    });
+  });
+</script>

@@ -1,0 +1,155 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+---
+
+<Layout title="Mi Perfil - EstadioApp">
+  <div class="min-h-screen bg-dark">
+    <Navbar />
+    
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="mb-8">
+        <h1 class="text-4xl font-bold text-white mb-2">Mi Perfil</h1>
+        <p class="text-gray-400">Administra tu información personal</p>
+      </div>
+      
+      <div class="bg-dark-light rounded-xl p-8">
+        <div id="profile-loading" class="text-center py-12">
+          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p class="text-gray-400 mt-4">Cargando perfil...</p>
+        </div>
+        
+        <form id="profile-form" class="hidden space-y-6">
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Nombre completo</label>
+            <input
+              type="text"
+              id="nombre"
+              name="nombre"
+              required
+              class="w-full bg-dark border border-gray-700 focus:border-primary text-white py-3 px-4 rounded-lg outline-none transition"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Email</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              disabled
+              class="w-full bg-dark border border-gray-700 text-gray-500 py-3 px-4 rounded-lg cursor-not-allowed"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Rol</label>
+            <input
+              type="text"
+              id="rol"
+              disabled
+              class="w-full bg-dark border border-gray-700 text-gray-500 py-3 px-4 rounded-lg cursor-not-allowed"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm text-gray-400 mb-2">Fecha de registro</label>
+            <input
+              type="text"
+              id="fecha_registro"
+              disabled
+              class="w-full bg-dark border border-gray-700 text-gray-500 py-3 px-4 rounded-lg cursor-not-allowed"
+            />
+          </div>
+          
+          <div id="error-message" class="hidden text-red-500 text-sm"></div>
+          <div id="success-message" class="hidden text-green-500 text-sm"></div>
+          
+          <div class="flex gap-4">
+            <button
+              type="submit"
+              class="flex-1 bg-primary hover:bg-sky-600 text-white font-semibold py-3 rounded-lg transition"
+            >
+              Guardar Cambios
+            </button>
+            <button
+              type="button"
+              id="btn-change-password"
+              class="flex-1 bg-dark-light hover:bg-gray-800 text-white font-semibold py-3 rounded-lg border border-gray-700 transition"
+            >
+              Cambiar Contraseña
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+</Layout>
+
+<script>
+  import { fetchAPI, isAuthenticated } from '../lib/api';
+  
+  if (!isAuthenticated()) {
+    window.location.href = '/login';
+  }
+  
+  const form = document.getElementById('profile-form') as HTMLFormElement;
+  const loading = document.getElementById('profile-loading');
+  const errorDiv = document.getElementById('error-message');
+  const successDiv = document.getElementById('success-message');
+  
+  let userId: string;
+  
+  async function loadProfile() {
+    try {
+      const user = await fetchAPI('/auth/me');
+      userId = user._id;
+      
+      (document.getElementById('nombre') as HTMLInputElement).value = user.nombre;
+      (document.getElementById('email') as HTMLInputElement).value = user.email;
+      (document.getElementById('rol') as HTMLInputElement).value = user.rol;
+      (document.getElementById('fecha_registro') as HTMLInputElement).value = 
+        new Date(user.fecha_registro).toLocaleDateString('es-ES');
+      
+      loading?.classList.add('hidden');
+      form?.classList.remove('hidden');
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      if (loading) {
+        loading.innerHTML = '<p class="text-red-500">Error al cargar el perfil</p>';
+      }
+    }
+  }
+  
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const nombre = (document.getElementById('nombre') as HTMLInputElement).value;
+    
+    try {
+      errorDiv?.classList.add('hidden');
+      successDiv?.classList.add('hidden');
+      
+      await fetchAPI(`/usuario/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ nombre })
+      });
+      
+      if (successDiv) {
+        successDiv.textContent = 'Perfil actualizado correctamente';
+        successDiv.classList.remove('hidden');
+      }
+    } catch (error: any) {
+      if (errorDiv) {
+        errorDiv.textContent = error.message || 'Error al actualizar';
+        errorDiv.classList.remove('hidden');
+      }
+    }
+  });
+  
+  document.getElementById('btn-change-password')?.addEventListener('click', () => {
+    alert('Funcionalidad de cambio de contraseña próximamente');
+  });
+  
+  loadProfile();
+</script>
