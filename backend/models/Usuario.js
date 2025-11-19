@@ -23,8 +23,8 @@ const usuarioSchema = new mongoose.Schema({
   },
   rol: {
     type: String,
-    enum: ['aficionado', 'admin'],
-    default: 'aficionado'
+    enum: ['AFICIONADO', 'ADMIN'],
+    default: 'AFICIONADO'
   },
   fecha_registro: {
     type: Date,

@@ -6,7 +6,7 @@ import { AppError } from '../middleware/errorHandler.js';
 // @access  Public
 export const getPartidos = async (req, res, next) => {
   try {
-    const partidos = await Partido.find({ estado: 'programado' })
+    const partidos = await Partido.find({ estado: 'PROGRAMADO' })
       .populate('estadio')
       .sort({ fecha: 1 });
 

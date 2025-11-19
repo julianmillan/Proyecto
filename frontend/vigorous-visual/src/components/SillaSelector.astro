@@ -14,7 +14,7 @@
       >
         <option value="">Selecciona una fila</option>
         {Array.from({ length: 20 }, (_, i) => (
-          <option value={String.fromCharCode(65 + i)}>{String.fromCharCode(65 + i)}</option>
+          <option value={i + 1}>Fila {i + 1}</option>
         ))}
       </select>
     </div>

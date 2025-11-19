@@ -26,8 +26,8 @@ const reservaSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ['activa', 'expirada', 'confirmada', 'cancelada'],
-    default: 'activa'
+    enum: ['PENDIENTE', 'CONFIRMADA', 'CANCELADA'],
+    default: 'PENDIENTE'
   },
   precio_total: {
     type: Number,

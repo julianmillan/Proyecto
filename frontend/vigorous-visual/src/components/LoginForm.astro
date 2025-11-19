@@ -79,7 +79,13 @@
       });
       
       saveToken(response.token);
-      window.location.href = '/home';
+      
+      // Redirigir según el rol del usuario
+      if (response.usuario && response.usuario.rol === 'ADMIN') {
+        window.location.href = '/admin';
+      } else {
+        window.location.href = '/home';
+      }
     } catch (error: any) {
       errorDiv.textContent = error.message || 'Error al iniciar sesión';
       errorDiv.classList.remove('hidden');

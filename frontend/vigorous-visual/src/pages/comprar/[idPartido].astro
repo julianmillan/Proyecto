@@ -172,8 +172,8 @@ import PaymentMethodSelector from '../../components/PaymentMethodSelector.astro'
         body: JSON.stringify({
           partido: partidoId,
           zona: selectedData.zona,
-          fila: selectedData.fila,
-          numero: selectedData.numero
+          fila: parseInt(selectedData.fila),
+          numero: parseInt(selectedData.numero)
         })
       });
       
@@ -192,8 +192,8 @@ import PaymentMethodSelector from '../../components/PaymentMethodSelector.astro'
         body: JSON.stringify({
           partido: partidoId,
           zona: selectedData.zona,
-          fila: selectedData.fila,
-          numero: selectedData.numero,
+          fila: parseInt(selectedData.fila),
+          numero: parseInt(selectedData.numero),
           metodo_pago: selectedData.payment
         })
       });

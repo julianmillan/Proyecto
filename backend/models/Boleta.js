@@ -22,8 +22,8 @@ const boletaSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ['activa', 'usada', 'cancelada'],
-    default: 'activa'
+    enum: ['ACTIVA', 'USADA', 'CANCELADA'],
+    default: 'ACTIVA'
   },
   codigo_qr: {
     type: String,

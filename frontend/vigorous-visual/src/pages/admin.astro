@@ -1,0 +1,462 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+---
+
+<Layout title="Panel de Administración - EstadioApp">
+  <div class="min-h-screen bg-dark">
+    <Navbar />
+    
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="mb-8">
+        <h1 class="text-4xl font-bold text-white mb-2">Panel de Administración</h1>
+        <p class="text-gray-400">Gestión del sistema</p>
+      </div>
+      
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-dark-light rounded-xl p-6 border-l-4 border-primary">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-400 text-sm">Total Usuarios</p>
+              <p id="total-usuarios" class="text-3xl font-bold text-white mt-2">-</p>
+            </div>
+            <div class="text-primary text-4xl">👥</div>
+          </div>
+        </div>
+        
+        <div class="bg-dark-light rounded-xl p-6 border-l-4 border-green-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-400 text-sm">Boletas Vendidas</p>
+              <p id="total-boletas" class="text-3xl font-bold text-white mt-2">-</p>
+            </div>
+            <div class="text-green-500 text-4xl">🎫</div>
+          </div>
+        </div>
+        
+        <div class="bg-dark-light rounded-xl p-6 border-l-4 border-yellow-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-400 text-sm">Partidos Activos</p>
+              <p id="total-partidos" class="text-3xl font-bold text-white mt-2">-</p>
+            </div>
+            <div class="text-yellow-500 text-4xl">⚽</div>
+          </div>
+        </div>
+        
+        <div class="bg-dark-light rounded-xl p-6 border-l-4 border-purple-500">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-400 text-sm">Estadios</p>
+              <p id="total-estadios" class="text-3xl font-bold text-white mt-2">149</p>
+            </div>
+            <div class="text-purple-500 text-4xl">🏟️</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tabs -->
+      <div class="flex gap-4 mb-8 border-b border-gray-800">
+        <button 
+          class="tab-btn px-6 py-3 font-semibold border-b-2 border-primary text-primary"
+          data-tab="usuarios"
+        >
+          Usuarios
+        </button>
+        <button 
+          class="tab-btn px-6 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white"
+          data-tab="partidos"
+        >
+          Partidos
+        </button>
+        <button 
+          class="tab-btn px-6 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white"
+          data-tab="boletas"
+        >
+          Boletas
+        </button>
+      </div>
+      
+      <!-- Content -->
+      <div id="admin-content" class="bg-dark-light rounded-xl p-6">
+        <div class="text-center py-12">
+          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p class="text-gray-400 mt-4">Cargando datos...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</Layout>
+
+<script>
+  import { fetchAPI, isAuthenticated, getToken } from '../lib/api';
+  
+  if (!isAuthenticated()) {
+    window.location.href = '/login';
+  }
+  
+  // Verificar que sea admin
+  async function verificarAdmin() {
+    try {
+      const user = await fetchAPI('/auth/me');
+      console.log('Usuario actual:', user);
+      console.log('Rol del usuario:', user.rol);
+      
+      if (user.rol !== 'ADMIN') {
+        alert(`Acceso denegado. Tu rol es: ${user.rol}. Solo administradores.`);
+        window.location.href = '/home';
+      }
+    } catch (error) {
+      console.error('Error verificando admin:', error);
+      window.location.href = '/login';
+    }
+  }
+  
+  let currentTab = 'usuarios';
+  
+  async function loadStats() {
+    try {
+      const [usuarios, boletas, partidos] = await Promise.all([
+        fetchAPI('/admin/usuarios').catch(() => []),
+        fetchAPI('/admin/boletas').catch(() => []),
+        fetchAPI('/admin/partidos').catch(() => [])
+      ]);
+      
+      document.getElementById('total-usuarios')!.textContent = usuarios.length.toString();
+      document.getElementById('total-boletas')!.textContent = boletas.length.toString();
+      document.getElementById('total-partidos')!.textContent = partidos.length.toString();
+    } catch (error) {
+      console.error('Error cargando estadísticas:', error);
+    }
+  }
+  
+  async function loadContent() {
+    const container = document.getElementById('admin-content');
+    if (!container) return;
+    
+    container.innerHTML = '<div class="text-center py-12"><div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>';
+    
+    try {
+      if (currentTab === 'usuarios') {
+        const usuarios = await fetchAPI('/admin/usuarios');
+        container.innerHTML = `
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-gray-700">
+                  <th class="text-left text-gray-400 py-3 px-4">Nombre</th>
+                  <th class="text-left text-gray-400 py-3 px-4">Email</th>
+                  <th class="text-left text-gray-400 py-3 px-4">Rol</th>
+                  <th class="text-left text-gray-400 py-3 px-4">Fecha Registro</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${usuarios.map((u: any) => `
+                  <tr class="border-b border-gray-800 hover:bg-dark">
+                    <td class="py-3 px-4 text-white">${u.nombre}</td>
+                    <td class="py-3 px-4 text-gray-400">${u.email}</td>
+                    <td class="py-3 px-4">
+                      <span class="${u.rol === 'ADMIN' ? 'bg-purple-600' : 'bg-primary'} text-white text-xs px-2 py-1 rounded">
+                        ${u.rol}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-gray-400">${new Date(u.fecha_registro).toLocaleDateString('es-ES')}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } else if (currentTab === 'partidos') {
+        const partidos = await fetchAPI('/admin/partidos');
+        container.innerHTML = `
+          <div class="mb-6">
+            <button 
+              id="btn-crear-partido"
+              class="bg-primary hover:bg-sky-600 text-white font-semibold px-6 py-3 rounded-lg transition"
+            >
+              + Crear Nuevo Partido
+            </button>
+          </div>
+          
+          <div class="space-y-4">
+            ${partidos.map((p: any) => `
+              <div class="bg-dark rounded-lg p-4 flex justify-between items-center">
+                <div>
+                  <h3 class="text-white font-bold">${p.equipo_local} vs ${p.equipo_visitante}</h3>
+                  <p class="text-gray-400 text-sm">${new Date(p.fecha).toLocaleDateString('es-ES')} - ${p.hora}</p>
+                  <p class="text-gray-500 text-xs">📍 ${p.estadio?.nombre || 'N/A'} • 💰 $${(p.precio_base || 0).toLocaleString()}</p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="bg-${p.estado === 'PROGRAMADO' ? 'green' : 'gray'}-600 text-white text-xs px-3 py-1 rounded">
+                    ${p.estado}
+                  </span>
+                  <button 
+                    class="btn-eliminar-partido bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition text-sm"
+                    data-id="${p._id}"
+                    data-nombre="${p.equipo_local} vs ${p.equipo_visitante}"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        
+        // Event listeners para eliminar
+        document.querySelectorAll('.btn-eliminar-partido').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const target = e.target as HTMLButtonElement;
+            const id = target.getAttribute('data-id');
+            const nombre = target.getAttribute('data-nombre');
+            
+            if (confirm(`¿Estás seguro de eliminar el partido "${nombre}"?`)) {
+              try {
+                await fetchAPI(`/admin/partidos/${id}`, { method: 'DELETE' });
+                alert('Partido eliminado exitosamente');
+                loadContent();
+              } catch (error: any) {
+                alert(error.message || 'Error al eliminar partido');
+              }
+            }
+          });
+        });
+        
+        // Event listener para crear
+        document.getElementById('btn-crear-partido')?.addEventListener('click', () => {
+          mostrarModalCrearPartido();
+        });
+      } else if (currentTab === 'boletas') {
+        const boletas = await fetchAPI('/admin/boletas');
+        container.innerHTML = `
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-gray-700">
+                  <th class="text-left text-gray-400 py-3 px-4">Usuario</th>
+                  <th class="text-left text-gray-400 py-3 px-4">Partido</th>
+                  <th class="text-left text-gray-400 py-3 px-4">Precio</th>
+                  <th class="text-left text-gray-400 py-3 px-4">Estado</th>
+                  <th class="text-left text-gray-400 py-3 px-4">Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${boletas.map((b: any) => `
+                  <tr class="border-b border-gray-800 hover:bg-dark">
+                    <td class="py-3 px-4 text-white">${b.usuario?.nombre || 'N/A'}</td>
+                    <td class="py-3 px-4 text-gray-400">${b.partido?.equipo_local || ''} vs ${b.partido?.equipo_visitante || ''}</td>
+                    <td class="py-3 px-4 text-primary font-bold">$${(b.precio_total || 0).toLocaleString()}</td>
+                    <td class="py-3 px-4">
+                      <span class="bg-${b.estado === 'ACTIVA' ? 'green' : 'gray'}-600 text-white text-xs px-2 py-1 rounded">
+                        ${b.estado}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-gray-400">${new Date(b.fecha_compra).toLocaleDateString('es-ES')}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    } catch (error: any) {
+      container.innerHTML = `
+        <div class="text-center py-12">
+          <p class="text-red-500">${error.message || 'Error cargando datos'}</p>
+        </div>
+      `;
+    }
+  }
+  
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      currentTab = target.getAttribute('data-tab') || 'usuarios';
+      
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('border-primary', 'text-primary');
+        b.classList.add('border-transparent', 'text-gray-400');
+      });
+      
+      target.classList.remove('border-transparent', 'text-gray-400');
+      target.classList.add('border-primary', 'text-primary');
+      
+      loadContent();
+    });
+  });
+  
+  // Modal para crear partido
+  function mostrarModalCrearPartido() {
+    const modalHTML = `
+      <div id="modal-crear" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div class="bg-dark-light rounded-xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <h2 class="text-2xl font-bold text-white mb-6">Crear Nuevo Partido</h2>
+          
+          <form id="form-crear-partido" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-gray-400 mb-2">Equipo Local</label>
+                <input 
+                  type="text" 
+                  name="equipo_local" 
+                  value="Once Caldas"
+                  readonly
+                  class="w-full bg-gray-800 border border-gray-700 text-gray-400 rounded-lg px-4 py-2 cursor-not-allowed"
+                />
+              </div>
+              
+              <div>
+                <label class="block text-gray-400 mb-2">Equipo Visitante</label>
+                <input 
+                  type="text" 
+                  name="equipo_visitante" 
+                  required
+                  class="w-full bg-dark border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-primary outline-none"
+                  placeholder="Ej: Millonarios, Nacional, Santa Fe..."
+                />
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-gray-400 mb-2">Fecha</label>
+                <input 
+                  type="date" 
+                  name="fecha" 
+                  required
+                  class="w-full bg-dark border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-primary outline-none"
+                />
+              </div>
+              
+              <div>
+                <label class="block text-gray-400 mb-2">Hora</label>
+                <input 
+                  type="time" 
+                  name="hora" 
+                  required
+                  class="w-full bg-dark border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-primary outline-none"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-gray-400 mb-2">Estadio</label>
+              <input 
+                type="text" 
+                value="Palogrande"
+                readonly
+                class="w-full bg-gray-800 border border-gray-700 text-gray-400 rounded-lg px-4 py-2 cursor-not-allowed"
+              />
+              <input type="hidden" name="estadio" id="select-estadio" />
+            </div>
+            
+            <div>
+              <label class="block text-gray-400 mb-2">Precio Base</label>
+              <input 
+                type="number" 
+                name="precio_base" 
+                required
+                min="1000"
+                step="1000"
+                class="w-full bg-dark border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-primary outline-none"
+                placeholder="Ej: 50000"
+              />
+            </div>
+            
+            <div class="flex gap-4 mt-6">
+              <button 
+                type="submit"
+                class="flex-1 bg-primary hover:bg-sky-600 text-white font-semibold py-3 rounded-lg transition"
+              >
+                Crear Partido
+              </button>
+              <button 
+                type="button"
+                id="btn-cancelar-modal"
+                class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-lg transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Cargar estadios
+    cargarEstadios();
+    
+    // Event listeners
+    document.getElementById('btn-cancelar-modal')?.addEventListener('click', () => {
+      document.getElementById('modal-crear')?.remove();
+    });
+    
+    document.getElementById('form-crear-partido')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const formData = new FormData(form);
+      
+      const data = {
+        equipo_local: formData.get('equipo_local'),
+        equipo_visitante: formData.get('equipo_visitante'),
+        fecha: formData.get('fecha'),
+        hora: formData.get('hora'),
+        estadio: formData.get('estadio'),
+        precio_base: parseInt(formData.get('precio_base') as string)
+      };
+      
+      try {
+        await fetchAPI('/admin/partidos', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        
+        alert('Partido creado exitosamente');
+        document.getElementById('modal-crear')?.remove();
+        loadContent();
+      } catch (error: any) {
+        alert(error.message || 'Error al crear partido');
+      }
+    });
+  }
+  
+  async function cargarEstadios() {
+    try {
+      const partidos = await fetchAPI('/partidos');
+      const selectHidden = document.getElementById('select-estadio') as HTMLInputElement;
+      
+      // Buscar el estadio Palogrande entre los partidos existentes
+      let idPalogrande = null;
+      
+      for (const partido of partidos) {
+        if (partido.estadio && partido.estadio.nombre === 'Palogrande') {
+          idPalogrande = partido.estadio._id;
+          break;
+        }
+      }
+      
+      // Si no se encuentra, usar el primer estadio disponible como fallback
+      if (!idPalogrande && partidos.length > 0 && partidos[0].estadio) {
+        idPalogrande = partidos[0].estadio._id;
+        console.warn('Estadio Palogrande no encontrado, usando estadio por defecto');
+      }
+      
+      if (selectHidden && idPalogrande) {
+        selectHidden.value = idPalogrande;
+      }
+    } catch (error) {
+      console.error('Error cargando estadio:', error);
+    }
+  }
+  
+  verificarAdmin();
+  loadStats();
+  loadContent();
+</script>

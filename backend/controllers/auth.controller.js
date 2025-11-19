@@ -96,8 +96,11 @@ export const getMe = async (req, res, next) => {
     }
 
     res.json({
-      success: true,
-      ...usuario.toObject()
+      _id: usuario._id,
+      nombre: usuario.nombre,
+      email: usuario.email,
+      rol: usuario.rol,
+      fecha_registro: usuario.fecha_registro
     });
   } catch (error) {
     next(error);

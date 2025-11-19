@@ -23,8 +23,11 @@ export const protect = async (req, res, next) => {
 
 export const restrictTo = (...roles) => {
   return (req, res, next) => {
+    console.log('Rol del usuario:', req.user.rol);
+    console.log('Roles permitidos:', roles);
+    
     if (!roles.includes(req.user.rol)) {
-      return next(new AppError('No tienes permiso para realizar esta acción', 403));
+      return next(new AppError(`No tienes permiso para realizar esta acción. Tu rol: ${req.user.rol}, Roles requeridos: ${roles.join(', ')}`, 403));
     }
     next();
   };

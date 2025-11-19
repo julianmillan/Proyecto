@@ -6,21 +6,9 @@ const estadioSchema = new mongoose.Schema({
     required: [true, 'El nombre del estadio es requerido'],
     trim: true
   },
-  ciudad: {
-    type: String,
-    required: [true, 'La ciudad es requerida'],
-    trim: true
-  },
-  capacidad: {
+  capacidad_total: {
     type: Number,
-    required: [true, 'La capacidad es requerida']
-  },
-  direccion: {
-    type: String,
-    trim: true
-  },
-  imagen: {
-    type: String
+    default: null
   }
 }, {
   timestamps: true

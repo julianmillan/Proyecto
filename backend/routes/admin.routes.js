@@ -4,7 +4,10 @@ import {
   actualizarPartido, 
   eliminarPartido,
   crearEstadio,
-  crearLocalidad
+  crearLocalidad,
+  getUsuarios,
+  getPartidosAdmin,
+  getBoletasAdmin
 } from '../controllers/admin.controller.js';
 import { protect, restrictTo } from '../middleware/auth.js';
 
@@ -12,7 +15,12 @@ const router = express.Router();
 
 // Proteger todas las rutas de admin
 router.use(protect);
-router.use(restrictTo('admin'));
+router.use(restrictTo('ADMIN'));
+
+// Consultas
+router.get('/usuarios', getUsuarios);
+router.get('/partidos', getPartidosAdmin);
+router.get('/boletas', getBoletasAdmin);
 
 // Partidos
 router.post('/partidos', crearPartido);

@@ -1,7 +1,48 @@
 import Partido from '../models/Partido.js';
 import Estadio from '../models/Estadio.js';
 import Localidad from '../models/Localidad.js';
+import Usuario from '../models/Usuario.js';
+import Boleta from '../models/Boleta.js';
 import { AppError } from '../middleware/errorHandler.js';
+
+// @desc    Obtener todos los usuarios
+// @route   GET /api/admin/usuarios
+// @access  Private/Admin
+export const getUsuarios = async (req, res, next) => {
+  try {
+    const usuarios = await Usuario.find().select('-contraseña').sort({ fecha_registro: -1 });
+    res.json(usuarios);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Obtener todos los partidos (admin)
+// @route   GET /api/admin/partidos
+// @access  Private/Admin
+export const getPartidosAdmin = async (req, res, next) => {
+  try {
+    const partidos = await Partido.find().populate('estadio').sort({ fecha: -1 });
+    res.json(partidos);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Obtener todas las boletas (admin)
+// @route   GET /api/admin/boletas
+// @access  Private/Admin
+export const getBoletasAdmin = async (req, res, next) => {
+  try {
+    const boletas = await Boleta.find()
+      .populate('usuario', 'nombre email')
+      .populate('partido', 'equipo_local equipo_visitante fecha')
+      .sort({ fecha_compra: -1 });
+    res.json(boletas);
+  } catch (error) {
+    next(error);
+  }
+};
 
 // @desc    Crear nuevo partido
 // @route   POST /api/admin/partidos

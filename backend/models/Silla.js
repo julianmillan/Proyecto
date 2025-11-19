@@ -1,33 +1,33 @@
 import mongoose from 'mongoose';
 
 const sillaSchema = new mongoose.Schema({
-  numero: {
-    type: String,
-    required: [true, 'El número de silla es requerido']
-  },
   fila: {
-    type: String,
+    type: Number,
     required: [true, 'La fila es requerida']
+  },
+  columna: {
+    type: Number,
+    required: [true, 'La columna es requerida']
   },
   localidad: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Localidad',
     required: true
-  },
-  estado: {
-    type: String,
-    enum: ['disponible', 'reservada', 'vendida'],
-    default: 'disponible'
-  },
-  partido_actual: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Partido'
   }
 }, {
   timestamps: true
 });
 
 // Índice compuesto para evitar duplicados
-sillaSchema.index({ numero: 1, fila: 1, localidad: 1 }, { unique: true });
+sillaSchema.index({ fila: 1, columna: 1, localidad: 1 }, { unique: true });
+
+// Eliminar índice antiguo si existe
+sillaSchema.pre('save', async function() {
+  try {
+    await this.collection.dropIndex('numero_1_fila_1_localidad_1');
+  } catch (err) {
+    // Índice no existe, continuar
+  }
+});
 
 export default mongoose.model('Silla', sillaSchema);

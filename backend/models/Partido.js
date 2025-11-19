@@ -30,8 +30,8 @@ const partidoSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ['programado', 'en_curso', 'finalizado', 'cancelado'],
-    default: 'programado'
+    enum: ['PROGRAMADO', 'FINALIZADO'],
+    default: 'PROGRAMADO'
   },
   imagen: {
     type: String

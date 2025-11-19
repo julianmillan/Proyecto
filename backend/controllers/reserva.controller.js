@@ -20,22 +20,33 @@ export const crearReserva = async (req, res, next) => {
 
     // Buscar o crear silla
     let silla = await Silla.findOne({ 
-      numero, 
+      columna: numero, 
       fila, 
       localidad: localidad._id 
     });
 
     if (!silla) {
       silla = await Silla.create({
-        numero,
+        columna: numero,
         fila,
-        localidad: localidad._id,
-        estado: 'disponible'
+        localidad: localidad._id
       });
     }
 
-    // Verificar disponibilidad
-    if (silla.estado !== 'disponible') {
+    // Verificar que no exista reserva o boleta activa para esta silla en este partido
+    const reservaExistente = await Reserva.findOne({
+      silla: silla._id,
+      partido,
+      estado: { $in: ['PENDIENTE', 'CONFIRMADA'] }
+    });
+
+    const boletaExistente = await Boleta.findOne({
+      silla: silla._id,
+      partido,
+      estado: 'ACTIVA'
+    });
+
+    if (reservaExistente || boletaExistente) {
       throw new AppError('La silla no está disponible', 400);
     }
 
@@ -50,11 +61,6 @@ export const crearReserva = async (req, res, next) => {
       fecha_expiracion: fechaExpiracion,
       precio_total: localidad.precio_base
     });
-
-    // Actualizar estado de la silla
-    silla.estado = 'reservada';
-    silla.partido_actual = partido;
-    await silla.save();
 
     res.status(201).json({
       success: true,
@@ -80,22 +86,33 @@ export const comprarBoleta = async (req, res, next) => {
 
     // Buscar o crear silla
     let silla = await Silla.findOne({ 
-      numero, 
+      columna: numero, 
       fila, 
       localidad: localidad._id 
     });
 
     if (!silla) {
       silla = await Silla.create({
-        numero,
+        columna: numero,
         fila,
-        localidad: localidad._id,
-        estado: 'disponible'
+        localidad: localidad._id
       });
     }
 
-    // Verificar disponibilidad
-    if (silla.estado !== 'disponible') {
+    // Verificar que no exista reserva o boleta activa para esta silla en este partido
+    const reservaExistente = await Reserva.findOne({
+      silla: silla._id,
+      partido,
+      estado: { $in: ['PENDIENTE', 'CONFIRMADA'] }
+    });
+
+    const boletaExistente = await Boleta.findOne({
+      silla: silla._id,
+      partido,
+      estado: 'ACTIVA'
+    });
+
+    if (reservaExistente || boletaExistente) {
       throw new AppError('La silla no está disponible', 400);
     }
 
@@ -103,8 +120,8 @@ export const comprarBoleta = async (req, res, next) => {
     const pago = await Pago.create({
       usuario: req.user.id,
       monto: localidad.precio_base,
-      metodo_pago,
-      estado: 'completado',
+      metodo_pago: metodo_pago.toUpperCase(),
+      estado: 'EXITOSO',
       referencia_pago: `REF-${Date.now()}`
     });
 
@@ -117,11 +134,6 @@ export const comprarBoleta = async (req, res, next) => {
       pago: pago._id,
       codigo_qr: `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     });
-
-    // Actualizar silla
-    silla.estado = 'vendida';
-    silla.partido_actual = partido;
-    await silla.save();
 
     // Actualizar referencia de pago
     pago.boleta = boleta._id;
@@ -175,21 +187,13 @@ export const cancelarBoleta = async (req, res, next) => {
     }
 
     // Verificar que la boleta esté activa
-    if (boleta.estado !== 'activa') {
+    if (boleta.estado !== 'ACTIVA') {
       throw new AppError('La boleta no puede ser cancelada', 400);
     }
 
     // Actualizar boleta
-    boleta.estado = 'cancelada';
+    boleta.estado = 'CANCELADA';
     await boleta.save();
-
-    // Liberar silla
-    const silla = await Silla.findById(boleta.silla);
-    if (silla) {
-      silla.estado = 'disponible';
-      silla.partido_actual = null;
-      await silla.save();
-    }
 
     res.json({
       success: true,

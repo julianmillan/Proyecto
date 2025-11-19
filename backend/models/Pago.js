@@ -16,13 +16,13 @@ const pagoSchema = new mongoose.Schema({
   },
   metodo_pago: {
     type: String,
-    enum: ['tarjeta', 'pse', 'efectivo'],
+    enum: ['TARJETA', 'NEQUI', 'PSE'],
     required: true
   },
   estado: {
     type: String,
-    enum: ['pendiente', 'completado', 'fallido', 'reembolsado'],
-    default: 'pendiente'
+    enum: ['EXITOSO', 'FALLIDO', 'PENDIENTE'],
+    default: 'PENDIENTE'
   },
   fecha_pago: {
     type: Date,
