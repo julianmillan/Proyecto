@@ -7,7 +7,12 @@ import {
   crearLocalidad,
   getUsuarios,
   getPartidosAdmin,
-  getBoletasAdmin
+  getBoletasAdmin,
+  simularPartido,
+  cancelarPartido,
+  getReporteVentas,
+  getHistorialPartidos,
+  finalizarPartido
 } from '../controllers/admin.controller.js';
 import { protect, restrictTo } from '../middleware/auth.js';
 
@@ -21,11 +26,18 @@ router.use(restrictTo('ADMIN'));
 router.get('/usuarios', getUsuarios);
 router.get('/partidos', getPartidosAdmin);
 router.get('/boletas', getBoletasAdmin);
+router.get('/historial-partidos', getHistorialPartidos);
+
+// Reportes
+router.get('/reportes/ventas', getReporteVentas);
 
 // Partidos
 router.post('/partidos', crearPartido);
 router.patch('/partidos/:id', actualizarPartido);
 router.delete('/partidos/:id', eliminarPartido);
+router.post('/partidos/:id/simular', simularPartido);
+router.patch('/partidos/:id/cancelar', cancelarPartido);
+router.patch('/partidos/:id/finalizar', finalizarPartido);
 
 // Estadios y localidades
 router.post('/estadios', crearEstadio);

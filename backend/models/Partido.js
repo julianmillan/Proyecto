@@ -30,7 +30,7 @@ const partidoSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ['PROGRAMADO', 'FINALIZADO'],
+    enum: ['PROGRAMADO', 'SIMULADO', 'FINALIZADO', 'CANCELADO'],
     default: 'PROGRAMADO'
   },
   imagen: {
@@ -38,6 +38,29 @@ const partidoSchema = new mongoose.Schema({
   },
   descripcion: {
     type: String
+  },
+  // Campos para simulación de partidos
+  simulado: {
+    type: Boolean,
+    default: false
+  },
+  resultado: {
+    goles_local: { type: Number, default: 0 },
+    goles_visitante: { type: Number, default: 0 }
+  },
+  estadisticas: {
+    posesion_local: { type: Number, min: 0, max: 100 },
+    posesion_visitante: { type: Number, min: 0, max: 100 },
+    tarjetas_amarillas_local: { type: Number, default: 0 },
+    tarjetas_amarillas_visitante: { type: Number, default: 0 },
+    tarjetas_rojas_local: { type: Number, default: 0 },
+    tarjetas_rojas_visitante: { type: Number, default: 0 },
+    tiros_arco_local: { type: Number, default: 0 },
+    tiros_arco_visitante: { type: Number, default: 0 }
+  },
+  asistencia_real: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true

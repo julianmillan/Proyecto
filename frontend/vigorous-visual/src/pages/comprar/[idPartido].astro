@@ -3,8 +3,8 @@ export const prerender = false;
 
 import Layout from '../../layouts/Layout.astro';
 import Navbar from '../../components/Navbar.astro';
-import StadiumMap from '../../components/StadiumMap.astro';
-import SillaSelector from '../../components/SillaSelector.astro';
+import MapaEstadio from '../../components/MapaEstadio.astro';
+import SelectorAsientosVisual from '../../components/SelectorAsientosVisual.astro';
 import PaymentMethodSelector from '../../components/PaymentMethodSelector.astro';
 ---
 
@@ -25,8 +25,8 @@ import PaymentMethodSelector from '../../components/PaymentMethodSelector.astro'
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Selection Panel -->
         <div class="lg:col-span-2 space-y-6">
-          <StadiumMap />
-          <SillaSelector />
+          <MapaEstadio />
+          <SelectorAsientosVisual />
           <PaymentMethodSelector />
         </div>
         
@@ -109,13 +109,29 @@ import PaymentMethodSelector from '../../components/PaymentMethodSelector.astro'
       
       if (infoDiv) {
         infoDiv.innerHTML = `
-          <h2 class="text-3xl font-bold text-white mb-2">
-            ${partido.equipo_local} <span class="text-primary">vs</span> ${partido.equipo_visitante}
-          </h2>
-          <div class="flex gap-6 text-gray-400">
-            <span>📅 ${new Date(partido.fecha).toLocaleDateString('es-ES')}</span>
-            <span>🕒 ${partido.hora}</span>
-            <span>📍 ${partido.estadio?.nombre || 'Estadio'}</span>
+          <div class="flex flex-col md:flex-row gap-6">
+            ${partido.imagen ? `
+              <div class="w-full md:w-64 h-40 rounded-lg overflow-hidden flex-shrink-0">
+                <img 
+                  src="${partido.imagen}" 
+                  alt="${partido.equipo_local} vs ${partido.equipo_visitante}"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+            ` : ''}
+            <div class="flex-1">
+              <h2 class="text-3xl font-bold text-white mb-2">
+                ${partido.equipo_local} <span class="text-primary">vs</span> ${partido.equipo_visitante}
+              </h2>
+              ${partido.descripcion ? `
+                <p class="text-gray-400 text-sm mb-3">${partido.descripcion}</p>
+              ` : ''}
+              <div class="flex flex-wrap gap-4 text-gray-400">
+                <span>📅 ${new Date(partido.fecha).toLocaleDateString('es-ES')}</span>
+                <span>🕒 ${partido.hora}</span>
+                <span>📍 ${partido.estadio?.nombre || 'Estadio'}</span>
+              </div>
+            </div>
           </div>
         `;
       }
@@ -147,7 +163,7 @@ import PaymentMethodSelector from '../../components/PaymentMethodSelector.astro'
   }
   
   // Listen to custom events
-  window.addEventListener('zona-selected', ((e: CustomEvent) => {
+  window.addEventListener('localidad-selected', ((e: CustomEvent) => {
     selectedData.zona = e.detail.zona;
     selectedData.precio = e.detail.precio;
     updateSummary();

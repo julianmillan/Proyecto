@@ -8,6 +8,7 @@ import partidoRoutes from './routes/partido.routes.js';
 import reservaRoutes from './routes/reserva.routes.js';
 import usuarioRoutes from './routes/usuario.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import localidadRoutes from './routes/localidad.routes.js';
 import { errorHandler } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -33,6 +34,7 @@ app.use('/api/partidos', partidoRoutes);
 app.use('/api', reservaRoutes);
 app.use('/api/usuario', usuarioRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/localidades', localidadRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

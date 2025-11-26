@@ -1,0 +1,212 @@
+---
+// Selector visual de asientos con grid interactivo
+---
+
+<div id="asientos-section" class="bg-dark-light rounded-xl p-6 hidden">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-xl font-bold text-white">Selecciona tu asiento</h3>
+    <button id="btn-volver" class="text-gray-400 hover:text-white transition">
+      ← Cambiar localidad
+    </button>
+  </div>
+  
+  <div id="zona-info" class="bg-dark rounded-lg p-4 mb-6">
+    <div class="flex justify-between items-center">
+      <div>
+        <p class="text-gray-400 text-sm">Localidad seleccionada</p>
+        <p id="zona-nombre" class="text-white font-bold text-lg"></p>
+      </div>
+      <div class="text-right">
+        <p class="text-gray-400 text-sm">Precio por asiento</p>
+        <p id="zona-precio" class="text-primary font-bold text-2xl"></p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Leyenda de colores -->
+  <div class="flex gap-4 justify-center mb-4 p-3 bg-dark rounded-lg">
+    <div class="flex items-center gap-2">
+      <div class="w-6 h-6 bg-green-500 rounded"></div>
+      <span class="text-white text-sm">Disponible</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="w-6 h-6 bg-red-500 rounded"></div>
+      <span class="text-white text-sm">Ocupado</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="w-6 h-6 bg-primary rounded"></div>
+      <span class="text-white text-sm">Seleccionado</span>
+    </div>
+  </div>
+  
+  <!-- Pantalla / Escenario -->
+  <div class="bg-gradient-to-b from-gray-700 to-gray-800 rounded-t-lg py-2 text-center mb-4">
+    <p class="text-white/50 text-sm">🎯 CANCHA</p>
+  </div>
+  
+  <!-- Grid de asientos -->
+  <div id="asientos-grid" class="overflow-x-auto pb-4">
+    <div class="min-w-[600px]">
+      <!-- Los asientos se generarán aquí -->
+    </div>
+  </div>
+  
+  <!-- Controles de navegación -->
+  <div class="flex gap-2 mt-4">
+    <button id="btn-fila-anterior" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg transition">
+      ← Filas anteriores
+    </button>
+    <button id="btn-fila-siguiente" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg transition">
+      Filas siguientes →
+    </button>
+  </div>
+</div>
+
+<script>
+  import { fetchAPI } from '../lib/api';
+  
+  let localidadActual = { id: '', zona: '', precio: 0, filas: 10, asientosPorFila: 20 };
+  let asientoSeleccionado = { fila: 0, columna: 0 };
+  let filaInicio = 1;
+  const filasPorPagina = 10;
+  let columnasPorFila = 20; // Se actualizará dinámicamente según la localidad
+  let asientosOcupados = new Set<string>();
+  let partidoId: string | null = null;
+  
+  // Obtener ID del partido
+  partidoId = window.location.pathname.split('/').pop();
+  
+  window.addEventListener('localidad-selected', ((e: CustomEvent) => {
+    localidadActual = e.detail;
+    columnasPorFila = localidadActual.asientosPorFila || 20;
+    filaInicio = 1; // Reset al cambiar localidad
+    mostrarAsientos();
+  }) as EventListener);
+  
+  async function cargarDisponibilidad() {
+    try {
+      if (!localidadActual.id) {
+        console.warn('No hay localidad seleccionada');
+        return;
+      }
+      const data = await fetchAPI(`/partidos/${partidoId}/disponibilidad?localidad=${localidadActual.id}`);
+      asientosOcupados = new Set(data.ocupados);
+    } catch (error) {
+      console.error('Error cargando disponibilidad:', error);
+    }
+  }
+  
+  async function mostrarAsientos() {
+    const section = document.getElementById('asientos-section');
+    const zonaNombre = document.getElementById('zona-nombre');
+    const zonaPrecio = document.getElementById('zona-precio');
+    
+    if (section) section.classList.remove('hidden');
+    if (zonaNombre) zonaNombre.textContent = localidadActual.zona;
+    if (zonaPrecio) zonaPrecio.textContent = `$${localidadActual.precio.toLocaleString()}`;
+    
+    await cargarDisponibilidad();
+    generarAsientos();
+  }
+  
+  function generarAsientos() {
+    const grid = document.getElementById('asientos-grid');
+    if (!grid) return;
+    
+    const totalFilas = localidadActual.filas || 10;
+    const filaFin = Math.min(filaInicio + filasPorPagina - 1, totalFilas);
+    let html = '<div class="space-y-2">';
+    
+    // Mostrar rango de filas actual
+    html += `
+      <div class="text-center mb-3 py-2 bg-dark rounded">
+        <p class="text-gray-400 text-sm">Mostrando filas ${filaInicio} - ${filaFin} de ${totalFilas}</p>
+      </div>
+    `;
+    
+    for (let fila = filaInicio; fila <= filaFin; fila++) {
+      html += `
+        <div class="flex items-center gap-2">
+          <div class="w-16 text-center">
+            <span class="text-gray-400 font-mono text-sm font-bold">Fila ${fila}</span>
+          </div>
+          <div class="flex gap-1 flex-1 justify-center flex-wrap">
+      `;
+      
+      // Para localidades grandes, mostrar solo una muestra de asientos
+      const mostrarTodos = columnasPorFila <= 50;
+      const asientosPorGrupo = mostrarTodos ? 1 : Math.ceil(columnasPorFila / 30);
+      
+      for (let col = 1; col <= columnasPorFila; col += asientosPorGrupo) {
+        const isOcupado = asientosOcupados.has(`${fila}-${col}`);
+        const isSeleccionado = asientoSeleccionado.fila === fila && asientoSeleccionado.columna === col;
+        
+        const clases = isSeleccionado 
+          ? 'bg-primary hover:bg-primary' 
+          : isOcupado 
+            ? 'bg-red-500 cursor-not-allowed opacity-50' 
+            : 'bg-green-500 hover:bg-green-400 cursor-pointer';
+        
+        html += `
+          <button 
+            class="asiento-btn w-8 h-8 rounded ${clases} transition-all transform hover:scale-110 disabled:hover:scale-100"
+            data-fila="${fila}"
+            data-col="${col}"
+            ${isOcupado ? 'disabled' : ''}
+            title="Fila ${fila}, Asiento ${col}"
+          >
+            <span class="text-[10px] text-white font-bold">${col}</span>
+          </button>
+        `;
+      }
+      
+      html += `
+          </div>
+        </div>
+      `;
+    }
+    
+    html += '</div>';
+    grid.innerHTML = html;
+    
+    // Event listeners para asientos
+    document.querySelectorAll('.asiento-btn:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        const fila = parseInt(target.getAttribute('data-fila') || '0');
+        const col = parseInt(target.getAttribute('data-col') || '0');
+        
+        asientoSeleccionado = { fila, columna: col };
+        generarAsientos(); // Re-renderizar para mostrar selección
+        
+        // Dispatch evento
+        window.dispatchEvent(new CustomEvent('silla-selected', {
+          detail: { fila, numero: col }
+        }));
+      });
+    });
+  }
+  
+  // Navegación entre filas
+  document.getElementById('btn-fila-anterior')?.addEventListener('click', () => {
+    if (filaInicio > 1) {
+      filaInicio = Math.max(1, filaInicio - filasPorPagina);
+      generarAsientos();
+    }
+  });
+  
+  document.getElementById('btn-fila-siguiente')?.addEventListener('click', () => {
+    const totalFilas = localidadActual.filas || 10;
+    if (filaInicio + filasPorPagina <= totalFilas) {
+      filaInicio += filasPorPagina;
+      generarAsientos();
+    }
+  });
+  
+  // Volver a selección de localidad
+  document.getElementById('btn-volver')?.addEventListener('click', () => {
+    const section = document.getElementById('asientos-section');
+    if (section) section.classList.add('hidden');
+    asientoSeleccionado = { fila: 0, columna: 0 };
+  });
+</script>

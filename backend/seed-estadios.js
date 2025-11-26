@@ -210,69 +210,92 @@ const seedDatabase = async () => {
     });
     console.log('✅ Usuarios creados');
 
-    // Usar primeros 5 estadios para crear localidades y partidos
-    const estadiosPrincipales = estadiosCreados.slice(0, 5);
+    // Encontrar el Estadio Palogrande (hogar del Once Caldas)
+    const palogrande = estadiosCreados.find(e => e.nombre.toLowerCase().includes('palogrande'));
+    if (!palogrande) {
+      throw new Error('No se encontró el Estadio Palogrande');
+    }
     
-    console.log('🎫 Creando localidades...');
-    for (const estadio of estadiosPrincipales) {
-      const localidades = await Localidad.insertMany([
-        { nombre: 'Norte', filas: 20, columnas: 30, precio_base: 50000, estadio: estadio._id },
-        { nombre: 'Sur', filas: 20, columnas: 30, precio_base: 50000, estadio: estadio._id },
-        { nombre: 'Oriental', filas: 15, columnas: 25, precio_base: 80000, estadio: estadio._id },
-        { nombre: 'Occidental', filas: 15, columnas: 25, precio_base: 80000, estadio: estadio._id }
-      ]);
+    console.log('🎫 Creando localidades para Palogrande...');
+    const localidades = await Localidad.insertMany([
+      { nombre: 'Norte', filas: 25, columnas: 220, precio_base: 35000, estadio: palogrande._id },
+      { nombre: 'Sur', filas: 25, columnas: 220, precio_base: 35000, estadio: palogrande._id },
+      { nombre: 'Oriental', filas: 30, columnas: 300, precio_base: 50000, estadio: palogrande._id },
+      { nombre: 'Occidental', filas: 28, columnas: 285, precio_base: 45000, estadio: palogrande._id }
+    ]);
 
-      // Crear algunas sillas de ejemplo
-      for (const localidad of localidades) {
-        const sillas = [];
-        for (let fila = 1; fila <= 3; fila++) {
-          for (let col = 1; col <= 5; col++) {
-            sillas.push({
-              fila: fila,
-              columna: col,
-              localidad: localidad._id,
-              estado: 'disponible'
-            });
-          }
+    // Crear algunas sillas de ejemplo
+    for (const localidad of localidades) {
+      const sillas = [];
+      for (let fila = 1; fila <= 3; fila++) {
+        for (let col = 1; col <= 5; col++) {
+          sillas.push({
+            fila: fila,
+            columna: col,
+            localidad: localidad._id,
+            estado: 'disponible'
+          });
         }
-        await Silla.insertMany(sillas);
       }
+      await Silla.insertMany(sillas);
     }
     console.log('✅ Localidades y sillas creadas');
 
-    // Crear partidos de ejemplo
+    // Crear partidos con Once Caldas siempre de local en Palogrande
     console.log('⚽ Creando partidos...');
-    const equipos = [
-      ['Millonarios', 'Nacional'],
-      ['América', 'Cali'],
-      ['Junior', 'Santa Fe'],
-      ['Medellín', 'Tolima'],
-      ['Atlético Bucaramanga', 'Once Caldas']
+    const partidosData = [
+      {
+        visitante: 'Atlético Nacional',
+        imagen: 'https://files.antena2.com/antena2/public/styles/imagen_despliegue/public/automated_images/97cbaa34frum7ma0xjpkf3841759797026.jpg.webp',
+        descripcion: 'Clásico colombiano en Palogrande'
+      },
+      {
+        visitante: 'Millonarios FC',
+        imagen: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&q=80',
+        descripcion: 'Gran partido contra los embajadores'
+      },
+      {
+        visitante: 'Deportivo Cali',
+        imagen: 'https://files.antena2.com/antena2/public/styles/imagen_despliegue/public/2025-05/oncecaldasydeportivocali.jpg.webp',
+        descripcion: 'Enfrentamiento vallecaucano'
+      },
+      {
+        visitante: 'Junior de Barranquilla',
+        imagen: 'https://files.antena2.com/antena2/public/styles/imagen_despliegue/public/2025-07/oncecaldasvsjuniorligabetplay.jpg.webp',
+        descripcion: 'Duelo contra el tiburón'
+      },
+      {
+        visitante: 'América de Cali',
+        imagen: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQwUH81PYtiQoHP9X0g2LE07myMTzGYMZpnbA&s',
+        descripcion: 'Los escarlatas visitan Manizales'
+      }
     ];
 
-    for (let i = 0; i < equipos.length; i++) {
+    for (let i = 0; i < partidosData.length; i++) {
       const fecha = new Date();
       fecha.setDate(fecha.getDate() + (i + 1) * 7);
       
       await Partido.create({
-        equipo_local: equipos[i][0],
-        equipo_visitante: equipos[i][1],
+        equipo_local: 'Once Caldas',
+        equipo_visitante: partidosData[i].visitante,
         fecha: fecha,
         hora: '19:00',
-        estadio: estadiosPrincipales[i]._id,
+        estadio: palogrande._id,
         precio_base: 50000,
-        estado: 'PROGRAMADO'
+        estado: 'PROGRAMADO',
+        imagen: partidosData[i].imagen,
+        descripcion: partidosData[i].descripcion
       });
     }
     console.log('✅ Partidos creados');
 
     console.log('\n✨ Base de datos poblada exitosamente\n');
     console.log('📊 Resumen:');
-    console.log(`   • ${estadiosCreados.length} estadios`);
+    console.log(`   • ${estadiosCreados.length} estadios colombianos`);
     console.log(`   • 2 usuarios (admin@estadio.com / admin123, juan@email.com / 123456)`);
-    console.log(`   • 20 localidades`);
-    console.log(`   • 300 sillas de ejemplo`);
-    console.log(`   • 5 partidos`);
+    console.log(`   • 4 localidades en Estadio Palogrande (28,000 asientos)`);
+    console.log(`   • 60 sillas de ejemplo`);
+    console.log(`   • 5 partidos del Once Caldas de local en Palogrande`);
 
   } catch (error) {
     console.error('❌ Error poblando la base de datos:', error);

@@ -59,24 +59,36 @@ import Navbar from '../components/Navbar.astro';
       </div>
       
       <!-- Tabs -->
-      <div class="flex gap-4 mb-8 border-b border-gray-800">
+      <div class="flex gap-4 mb-8 border-b border-gray-800 overflow-x-auto">
         <button 
-          class="tab-btn px-6 py-3 font-semibold border-b-2 border-primary text-primary"
+          class="tab-btn px-6 py-3 font-semibold border-b-2 border-primary text-primary whitespace-nowrap"
           data-tab="usuarios"
         >
           Usuarios
         </button>
         <button 
-          class="tab-btn px-6 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white"
+          class="tab-btn px-6 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap"
           data-tab="partidos"
         >
           Partidos
         </button>
         <button 
-          class="tab-btn px-6 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white"
+          class="tab-btn px-6 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap"
           data-tab="boletas"
         >
           Boletas
+        </button>
+        <button 
+          class="tab-btn px-6 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap"
+          data-tab="reportes"
+        >
+          📊 Reportes
+        </button>
+        <button 
+          class="tab-btn px-6 py-3 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white whitespace-nowrap"
+          data-tab="historial"
+        >
+          📜 Historial Partidos
         </button>
       </div>
       
@@ -184,22 +196,69 @@ import Navbar from '../components/Navbar.astro';
           
           <div class="space-y-4">
             ${partidos.map((p: any) => `
-              <div class="bg-dark rounded-lg p-4 flex justify-between items-center">
-                <div>
+              <div class="bg-dark rounded-lg p-4 flex gap-4 items-center">
+                ${p.imagen ? `
+                  <div class="w-32 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                    <img 
+                      src="${p.imagen}" 
+                      alt="${p.equipo_local} vs ${p.equipo_visitante}"
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
+                ` : ''}
+                <div class="flex-1">
                   <h3 class="text-white font-bold">${p.equipo_local} vs ${p.equipo_visitante}</h3>
+                  ${p.descripcion ? `<p class="text-gray-500 text-xs mb-1">${p.descripcion}</p>` : ''}
                   <p class="text-gray-400 text-sm">${new Date(p.fecha).toLocaleDateString('es-ES')} - ${p.hora}</p>
                   <p class="text-gray-500 text-xs">📍 ${p.estadio?.nombre || 'N/A'} • 💰 $${(p.precio_base || 0).toLocaleString()}</p>
                 </div>
-                <div class="flex items-center gap-3">
-                  <span class="bg-${p.estado === 'PROGRAMADO' ? 'green' : 'gray'}-600 text-white text-xs px-3 py-1 rounded">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="bg-${
+                    p.estado === 'PROGRAMADO' ? 'green' : 
+                    p.estado === 'SIMULADO' ? 'purple' : 
+                    p.estado === 'FINALIZADO' ? 'blue' : 
+                    p.estado === 'CANCELADO' ? 'red' : 'gray'
+                  }-600 text-white text-xs px-3 py-1 rounded">
                     ${p.estado}
                   </span>
+                  ${p.estado === 'PROGRAMADO' ? `
+                    <button 
+                      class="btn-simular-partido bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition text-sm"
+                      data-id="${p._id}"
+                      data-nombre="${p.equipo_local} vs ${p.equipo_visitante}"
+                    >
+                      🎲 Simular
+                    </button>
+                    <button 
+                      class="btn-finalizar-partido bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition text-sm"
+                      data-id="${p._id}"
+                      data-nombre="${p.equipo_local} vs ${p.equipo_visitante}"
+                    >
+                      ✅ Finalizar
+                    </button>
+                    <button 
+                      class="btn-cancelar-partido bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg transition text-sm"
+                      data-id="${p._id}"
+                      data-nombre="${p.equipo_local} vs ${p.equipo_visitante}"
+                    >
+                      ⏸️ Cancelar
+                    </button>
+                  ` : ''}
+                  ${p.estado === 'SIMULADO' ? `
+                    <button 
+                      class="btn-finalizar-partido bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg transition text-sm"
+                      data-id="${p._id}"
+                      data-nombre="${p.equipo_local} vs ${p.equipo_visitante}"
+                    >
+                      ✅ Finalizar (Real)
+                    </button>
+                  ` : ''}
                   <button 
-                    class="btn-eliminar-partido bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition text-sm"
+                    class="btn-eliminar-partido bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition text-sm"
                     data-id="${p._id}"
                     data-nombre="${p.equipo_local} vs ${p.equipo_visitante}"
                   >
-                    Eliminar
+                    🗑️ Eliminar
                   </button>
                 </div>
               </div>
@@ -219,10 +278,62 @@ import Navbar from '../components/Navbar.astro';
                 await fetchAPI(`/admin/partidos/${id}`, { method: 'DELETE' });
                 alert('Partido eliminado exitosamente');
                 loadContent();
+                loadStats();
               } catch (error: any) {
                 alert(error.message || 'Error al eliminar partido');
               }
             }
+          });
+        });
+        
+        // Event listeners para simular
+        document.querySelectorAll('.btn-simular-partido').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const target = e.target as HTMLButtonElement;
+            const id = target.getAttribute('data-id');
+            const nombre = target.getAttribute('data-nombre');
+            
+            if (confirm(`¿Deseas simular el partido "${nombre}"? Esto generará un resultado aleatorio.`)) {
+              try {
+                const resultado = await fetchAPI(`/admin/partidos/${id}/simular`, { method: 'POST' });
+                alert(resultado.mensaje || 'Partido simulado exitosamente');
+                loadContent();
+                loadStats();
+              } catch (error: any) {
+                alert(error.message || 'Error al simular partido');
+              }
+            }
+          });
+        });
+        
+        // Event listeners para cancelar
+        document.querySelectorAll('.btn-cancelar-partido').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const target = e.target as HTMLButtonElement;
+            const id = target.getAttribute('data-id');
+            const nombre = target.getAttribute('data-nombre');
+            
+            if (confirm(`¿Estás seguro de cancelar el partido "${nombre}"? Las boletas vendidas serán reembolsadas.`)) {
+              try {
+                await fetchAPI(`/admin/partidos/${id}/cancelar`, { method: 'PATCH' });
+                alert('Partido cancelado y boletas reembolsadas');
+                loadContent();
+                loadStats();
+              } catch (error: any) {
+                alert(error.message || 'Error al cancelar partido');
+              }
+            }
+          });
+        });
+        
+        // Event listeners para finalizar
+        document.querySelectorAll('.btn-finalizar-partido').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const target = e.target as HTMLButtonElement;
+            const id = target.getAttribute('data-id');
+            const nombre = target.getAttribute('data-nombre');
+            
+            mostrarModalFinalizarPartido(id, nombre);
           });
         });
         
@@ -233,33 +344,172 @@ import Navbar from '../components/Navbar.astro';
       } else if (currentTab === 'boletas') {
         const boletas = await fetchAPI('/admin/boletas');
         container.innerHTML = `
+          <div class="mb-4">
+            <p class="text-gray-400">Total de boletas: <span class="text-white font-bold">${boletas.length}</span></p>
+          </div>
           <div class="overflow-x-auto">
             <table class="w-full">
               <thead>
                 <tr class="border-b border-gray-700">
                   <th class="text-left text-gray-400 py-3 px-4">Usuario</th>
+                  <th class="text-left text-gray-400 py-3 px-4">Email</th>
                   <th class="text-left text-gray-400 py-3 px-4">Partido</th>
                   <th class="text-left text-gray-400 py-3 px-4">Precio</th>
                   <th class="text-left text-gray-400 py-3 px-4">Estado</th>
-                  <th class="text-left text-gray-400 py-3 px-4">Fecha</th>
+                  <th class="text-left text-gray-400 py-3 px-4">Fecha Compra</th>
                 </tr>
               </thead>
               <tbody>
                 ${boletas.map((b: any) => `
                   <tr class="border-b border-gray-800 hover:bg-dark">
-                    <td class="py-3 px-4 text-white">${b.usuario?.nombre || 'N/A'}</td>
-                    <td class="py-3 px-4 text-gray-400">${b.partido?.equipo_local || ''} vs ${b.partido?.equipo_visitante || ''}</td>
+                    <td class="py-3 px-4">
+                      <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">
+                          ${(b.usuario?.nombre || 'U').charAt(0).toUpperCase()}
+                        </div>
+                        <span class="text-white font-medium">${b.usuario?.nombre || 'Usuario Desconocido'}</span>
+                      </div>
+                    </td>
+                    <td class="py-3 px-4 text-gray-400 text-sm">${b.usuario?.email || 'N/A'}</td>
+                    <td class="py-3 px-4 text-gray-300">${b.partido?.equipo_local || 'N/A'} vs ${b.partido?.equipo_visitante || 'N/A'}</td>
                     <td class="py-3 px-4 text-primary font-bold">$${(b.precio_total || 0).toLocaleString()}</td>
                     <td class="py-3 px-4">
-                      <span class="bg-${b.estado === 'ACTIVA' ? 'green' : 'gray'}-600 text-white text-xs px-2 py-1 rounded">
+                      <span class="bg-${b.estado === 'ACTIVA' ? 'green' : b.estado === 'USADA' ? 'blue' : 'gray'}-600 text-white text-xs px-2 py-1 rounded">
                         ${b.estado}
                       </span>
                     </td>
-                    <td class="py-3 px-4 text-gray-400">${new Date(b.fecha_compra).toLocaleDateString('es-ES')}</td>
+                    <td class="py-3 px-4 text-gray-400 text-sm">${new Date(b.fecha_compra).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                   </tr>
                 `).join('')}
               </tbody>
             </table>
+          </div>
+        `;
+      } else if (currentTab === 'reportes') {
+        const reporte = await fetchAPI('/admin/reportes/ventas');
+        container.innerHTML = `
+          <div class="space-y-6">
+            <h2 class="text-2xl font-bold text-white mb-4">📊 Reporte de Ventas</h2>
+            
+            <!-- Resumen general -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="bg-dark rounded-lg p-6 border-l-4 border-green-500">
+                <p class="text-gray-400 text-sm mb-2">Total Boletas Vendidas</p>
+                <p class="text-4xl font-bold text-white">${reporte.reporte.totalBoletas}</p>
+              </div>
+              <div class="bg-dark rounded-lg p-6 border-l-4 border-primary">
+                <p class="text-gray-400 text-sm mb-2">Ingresos Totales</p>
+                <p class="text-4xl font-bold text-primary">$${reporte.reporte.ingresosTotales.toLocaleString()}</p>
+              </div>
+            </div>
+            
+            <!-- Ventas por partido -->
+            <div class="bg-dark rounded-lg p-6">
+              <h3 class="text-xl font-bold text-white mb-4">Top 10 Partidos por Ventas</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead>
+                    <tr class="border-b border-gray-700">
+                      <th class="text-left text-gray-400 py-3 px-4">Partido</th>
+                      <th class="text-left text-gray-400 py-3 px-4">Boletas</th>
+                      <th class="text-left text-gray-400 py-3 px-4">Ingresos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${reporte.reporte.ventasPorPartido.map((v: any) => `
+                      <tr class="border-b border-gray-800">
+                        <td class="py-3 px-4 text-white">${v.partidoInfo?.equipo_local} vs ${v.partidoInfo?.equipo_visitante}</td>
+                        <td class="py-3 px-4 text-gray-400">${v.cantidad} boletas</td>
+                        <td class="py-3 px-4 text-primary font-bold">$${v.ingresos.toLocaleString()}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <!-- Ventas por localidad -->
+            <div class="bg-dark rounded-lg p-6">
+              <h3 class="text-xl font-bold text-white mb-4">Ventas por Localidad</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                ${reporte.reporte.ventasPorLocalidad.map((v: any) => `
+                  <div class="bg-dark-light rounded-lg p-4 border-l-4 border-yellow-500">
+                    <p class="text-gray-400 text-sm">${v._id}</p>
+                    <p class="text-2xl font-bold text-white mt-2">${v.cantidad}</p>
+                    <p class="text-primary text-sm mt-1">$${v.ingresos.toLocaleString()}</p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (currentTab === 'historial') {
+        const historial = await fetchAPI('/admin/historial-partidos');
+        container.innerHTML = `
+          <div class="space-y-4">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold text-white">📜 Historial de Partidos</h2>
+              <p class="text-gray-400">${historial.partidos.length} partidos finalizados</p>
+            </div>
+            
+            <div class="space-y-4">
+              ${historial.partidos.length === 0 ? `
+                <div class="text-center py-12">
+                  <p class="text-gray-400">No hay partidos finalizados</p>
+                </div>
+              ` : historial.partidos.map((p: any) => `
+                <div class="bg-dark rounded-lg p-6 ${p.simulado ? 'border-l-4 border-purple-500' : 'border-l-4 border-green-500'}">
+                  <div class="flex flex-col md:flex-row md:items-center justify-between mb-4">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-2">
+                        <h3 class="text-2xl font-bold text-white">
+                          ${p.equipo_local} ${p.resultado?.goles_local || 0} - ${p.resultado?.goles_visitante || 0} ${p.equipo_visitante}
+                        </h3>
+                        ${p.simulado ? '<span class="bg-purple-600 text-white text-xs px-2 py-1 rounded">SIMULADO</span>' : ''}
+                      </div>
+                      <p class="text-gray-400 text-sm">
+                        ${new Date(p.fecha).toLocaleDateString('es-ES')} - ${p.hora} | ${p.estadio?.nombre || 'Estadio'}
+                      </p>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                      <button 
+                        class="btn-ver-estadisticas bg-primary hover:bg-primary/80 text-white px-4 py-2 rounded-lg transition"
+                        data-partido='${JSON.stringify(p)}'
+                      >
+                        Ver Estadísticas →
+                      </button>
+                    </div>
+                  </div>
+                  
+                  ${p.estadisticas ? `
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-700">
+                      <div>
+                        <p class="text-gray-400 text-xs">Posesión</p>
+                        <p class="text-white font-bold">${p.estadisticas.posesion_local}% - ${p.estadisticas.posesion_visitante}%</p>
+                      </div>
+                      <div>
+                        <p class="text-gray-400 text-xs">Tiros al arco</p>
+                        <p class="text-white font-bold">${p.estadisticas.tiros_arco_local} - ${p.estadisticas.tiros_arco_visitante}</p>
+                      </div>
+                      <div>
+                        <p class="text-gray-400 text-xs">Tarjetas amarillas</p>
+                        <p class="text-yellow-500 font-bold">${p.estadisticas.tarjetas_amarillas_local} - ${p.estadisticas.tarjetas_amarillas_visitante}</p>
+                      </div>
+                      <div>
+                        <p class="text-gray-400 text-xs">Tarjetas rojas</p>
+                        <p class="text-red-500 font-bold">${p.estadisticas.tarjetas_rojas_local} - ${p.estadisticas.tarjetas_rojas_visitante}</p>
+                      </div>
+                    </div>
+                  ` : ''}
+                  
+                  <div class="mt-4 pt-4 border-t border-gray-700">
+                    <p class="text-gray-400 text-sm">
+                      <span class="font-bold text-white">${p.asistencia_real || 0}</span> asistentes
+                    </p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
           </div>
         `;
       }
@@ -289,6 +539,89 @@ import Navbar from '../components/Navbar.astro';
       loadContent();
     });
   });
+  
+  // Modal para finalizar partido
+  function mostrarModalFinalizarPartido(partidoId: string, partidoNombre: string) {
+    const modalHTML = `
+      <div id="modal-finalizar" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div class="bg-dark-light rounded-xl p-8 max-w-md w-full mx-4">
+          <h2 class="text-2xl font-bold text-white mb-4">Finalizar Partido</h2>
+          <p class="text-gray-400 mb-6">${partidoNombre}</p>
+          
+          <form id="form-finalizar-partido" class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-gray-400 mb-2">Goles Local</label>
+                <input 
+                  type="number" 
+                  name="goles_local" 
+                  min="0"
+                  value="0"
+                  required
+                  class="w-full bg-dark border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-primary outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-gray-400 mb-2">Goles Visitante</label>
+                <input 
+                  type="number" 
+                  name="goles_visitante" 
+                  min="0"
+                  value="0"
+                  required
+                  class="w-full bg-dark border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-primary outline-none"
+                />
+              </div>
+            </div>
+            
+            <p class="text-xs text-gray-500">Los datos de asistencia se calcularán automáticamente</p>
+            
+            <div class="flex gap-4 mt-6">
+              <button 
+                type="submit"
+                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition"
+              >
+                Finalizar Partido
+              </button>
+              <button 
+                type="button"
+                class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-lg transition"
+                onclick="document.getElementById('modal-finalizar')?.remove()"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // Form submit
+    document.getElementById('form-finalizar-partido')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const formData = new FormData(form);
+      
+      try {
+        await fetchAPI(`/admin/partidos/${partidoId}/finalizar`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            goles_local: parseInt(formData.get('goles_local') as string),
+            goles_visitante: parseInt(formData.get('goles_visitante') as string)
+          })
+        });
+        
+        document.getElementById('modal-finalizar')?.remove();
+        alert('Partido finalizado exitosamente');
+        loadContent();
+        loadStats();
+      } catch (error: any) {
+        alert(error.message || 'Error al finalizar partido');
+      }
+    });
+  }
   
   // Modal para crear partido
   function mostrarModalCrearPartido() {
@@ -366,6 +699,27 @@ import Navbar from '../components/Navbar.astro';
                 class="w-full bg-dark border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-primary outline-none"
                 placeholder="Ej: 50000"
               />
+            </div>
+            
+            <div>
+              <label class="block text-gray-400 mb-2">URL de Imagen (opcional)</label>
+              <input 
+                type="url" 
+                name="imagen" 
+                class="w-full bg-dark border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-primary outline-none"
+                placeholder="https://ejemplo.com/imagen.jpg"
+              />
+              <p class="text-gray-500 text-xs mt-1">💡 Puedes usar imágenes de Unsplash, Pexels o tu propio servidor</p>
+            </div>
+            
+            <div>
+              <label class="block text-gray-400 mb-2">Descripción (opcional)</label>
+              <textarea 
+                name="descripcion" 
+                rows="2"
+                class="w-full bg-dark border border-gray-700 text-white rounded-lg px-4 py-2 focus:border-primary outline-none resize-none"
+                placeholder="Descripción del partido..."
+              ></textarea>
             </div>
             
             <div class="flex gap-4 mt-6">
@@ -454,6 +808,140 @@ import Navbar from '../components/Navbar.astro';
     } catch (error) {
       console.error('Error cargando estadio:', error);
     }
+  }
+  
+  // Event delegation para botones de ver estadísticas (se crean dinámicamente)
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('btn-ver-estadisticas') || target.closest('.btn-ver-estadisticas')) {
+      const btn = target.classList.contains('btn-ver-estadisticas') ? target : target.closest('.btn-ver-estadisticas');
+      const partidoData = btn?.getAttribute('data-partido');
+      
+      if (partidoData) {
+        try {
+          const partido = JSON.parse(partidoData);
+          mostrarModalEstadisticas(partido);
+        } catch (error) {
+          console.error('Error parsing partido data:', error);
+        }
+      }
+    }
+  });
+  
+  // Modal para ver estadísticas detalladas
+  function mostrarModalEstadisticas(partido: any) {
+    const modalHTML = `
+      <div id="modal-estadisticas" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onclick="if(event.target === this) this.remove()">
+        <div class="bg-dark-light rounded-xl p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+          <div class="flex justify-between items-start mb-6">
+            <div>
+              <h2 class="text-3xl font-bold text-white mb-2">
+                ${partido.equipo_local} ${partido.resultado?.goles_local || 0} - ${partido.resultado?.goles_visitante || 0} ${partido.equipo_visitante}
+              </h2>
+              <p class="text-gray-400">${new Date(partido.fecha).toLocaleDateString('es-ES')} - ${partido.hora}</p>
+              ${partido.simulado ? '<span class="inline-block mt-2 bg-purple-600 text-white text-xs px-3 py-1 rounded">PARTIDO SIMULADO</span>' : '<span class="inline-block mt-2 bg-green-600 text-white text-xs px-3 py-1 rounded">PARTIDO REAL</span>'}
+            </div>
+            <button 
+              onclick="document.getElementById('modal-estadisticas')?.remove()"
+              class="text-gray-400 hover:text-white text-2xl"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div class="space-y-6">
+            <!-- Resultado -->
+            <div class="bg-dark rounded-lg p-6">
+              <h3 class="text-xl font-bold text-white mb-4">Resultado Final</h3>
+              <div class="flex justify-around items-center">
+                <div class="text-center">
+                  <p class="text-gray-400 mb-2">${partido.equipo_local}</p>
+                  <p class="text-6xl font-bold text-primary">${partido.resultado?.goles_local || 0}</p>
+                </div>
+                <div class="text-4xl text-gray-600">-</div>
+                <div class="text-center">
+                  <p class="text-gray-400 mb-2">${partido.equipo_visitante}</p>
+                  <p class="text-6xl font-bold text-primary">${partido.resultado?.goles_visitante || 0}</p>
+                </div>
+              </div>
+            </div>
+            
+            ${partido.estadisticas ? `
+              <!-- Estadísticas -->
+              <div class="bg-dark rounded-lg p-6">
+                <h3 class="text-xl font-bold text-white mb-4">Estadísticas del Partido</h3>
+                
+                <div class="space-y-6">
+                  <!-- Posesión -->
+                  <div>
+                    <div class="flex justify-between text-sm mb-2">
+                      <span class="text-white font-semibold">${partido.estadisticas.posesion_local}%</span>
+                      <span class="text-gray-400">Posesión</span>
+                      <span class="text-white font-semibold">${partido.estadisticas.posesion_visitante}%</span>
+                    </div>
+                    <div class="h-4 bg-gray-700 rounded-full overflow-hidden flex">
+                      <div class="bg-primary" style="width: ${partido.estadisticas.posesion_local}%"></div>
+                      <div class="bg-sky-800" style="width: ${partido.estadisticas.posesion_visitante}%"></div>
+                    </div>
+                  </div>
+                  
+                  <!-- Tiros al arco -->
+                  <div>
+                    <div class="flex justify-between text-sm mb-2">
+                      <span class="text-white font-semibold">${partido.estadisticas.tiros_arco_local}</span>
+                      <span class="text-gray-400">Tiros al Arco</span>
+                      <span class="text-white font-semibold">${partido.estadisticas.tiros_arco_visitante}</span>
+                    </div>
+                    <div class="h-2 bg-gray-700 rounded-full"></div>
+                  </div>
+                  
+                  <!-- Tarjetas -->
+                  <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-dark-light rounded-lg p-4">
+                      <p class="text-gray-400 text-sm mb-2">Tarjetas Amarillas</p>
+                      <div class="flex justify-between items-center">
+                        <span class="text-2xl font-bold text-yellow-500">${partido.estadisticas.tarjetas_amarillas_local}</span>
+                        <span class="text-gray-600">-</span>
+                        <span class="text-2xl font-bold text-yellow-500">${partido.estadisticas.tarjetas_amarillas_visitante}</span>
+                      </div>
+                    </div>
+                    
+                    <div class="bg-dark-light rounded-lg p-4">
+                      <p class="text-gray-400 text-sm mb-2">Tarjetas Rojas</p>
+                      <div class="flex justify-between items-center">
+                        <span class="text-2xl font-bold text-red-500">${partido.estadisticas.tarjetas_rojas_local}</span>
+                        <span class="text-gray-600">-</span>
+                        <span class="text-2xl font-bold text-red-500">${partido.estadisticas.tarjetas_rojas_visitante}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ` : '<div class="bg-dark rounded-lg p-6 text-center text-gray-400">No hay estadísticas disponibles</div>'}
+            
+            <!-- Asistencia -->
+            <div class="bg-dark rounded-lg p-6">
+              <h3 class="text-xl font-bold text-white mb-4">Asistencia</h3>
+              <div class="text-center">
+                <p class="text-5xl font-bold text-primary mb-2">${partido.asistencia_real || 0}</p>
+                <p class="text-gray-400">Espectadores en el estadio</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-6">
+            <button 
+              onclick="document.getElementById('modal-estadisticas')?.remove()"
+              class="w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 rounded-lg transition"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
   }
   
   verificarAdmin();

@@ -24,7 +24,8 @@ const localidadSchema = new mongoose.Schema({
     required: [true, 'El precio base es requerido']
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  collection: 'localidads'
 });
 
 export default mongoose.model('Localidad', localidadSchema);
