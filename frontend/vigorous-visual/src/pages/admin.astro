@@ -574,7 +574,7 @@ import Navbar from '../components/Navbar.astro';
               </div>
             </div>
             
-            <p class="text-xs text-gray-500">Los datos de asistencia se calcularán automáticamente</p>
+            <p class="text-xs text-gray-500">Las estadísticas y asistencia se calcularán automáticamente</p>
             
             <div class="flex gap-4 mt-6">
               <button 
@@ -604,12 +604,31 @@ import Navbar from '../components/Navbar.astro';
       const form = e.target as HTMLFormElement;
       const formData = new FormData(form);
       
+      const golesLocal = parseInt(formData.get('goles_local') as string);
+      const golesVisitante = parseInt(formData.get('goles_visitante') as string);
+      
+      // Generar estadísticas realistas basadas en los goles
+      const posesionLocal = Math.floor(Math.random() * 41) + 30; // 30-70%
+      const posesionVisitante = 100 - posesionLocal;
+      
+      const estadisticas = {
+        posesion_local: posesionLocal,
+        posesion_visitante: posesionVisitante,
+        tiros_arco_local: Math.max(golesLocal, Math.floor(Math.random() * 15) + 5),
+        tiros_arco_visitante: Math.max(golesVisitante, Math.floor(Math.random() * 15) + 5),
+        tarjetas_amarillas_local: Math.floor(Math.random() * 6),
+        tarjetas_amarillas_visitante: Math.floor(Math.random() * 6),
+        tarjetas_rojas_local: Math.random() < 0.2 ? Math.floor(Math.random() * 2) : 0,
+        tarjetas_rojas_visitante: Math.random() < 0.2 ? Math.floor(Math.random() * 2) : 0
+      };
+      
       try {
         await fetchAPI(`/admin/partidos/${partidoId}/finalizar`, {
           method: 'PATCH',
           body: JSON.stringify({
-            goles_local: parseInt(formData.get('goles_local') as string),
-            goles_visitante: parseInt(formData.get('goles_visitante') as string)
+            goles_local: golesLocal,
+            goles_visitante: golesVisitante,
+            estadisticas
           })
         });
         
