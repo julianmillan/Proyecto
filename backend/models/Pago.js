@@ -1,11 +1,6 @@
 import mongoose from 'mongoose';
 
 const pagoSchema = new mongoose.Schema({
-  usuario: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Usuario',
-    required: true
-  },
   boleta: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Boleta'

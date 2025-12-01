@@ -58,8 +58,7 @@ export const crearReserva = async (req, res, next) => {
       usuario: req.user.id,
       partido,
       silla: silla._id,
-      fecha_expiracion: fechaExpiracion,
-      precio_total: localidad.precio_base
+      fecha_expiracion: fechaExpiracion
     });
 
     res.status(201).json({
@@ -118,7 +117,6 @@ export const comprarBoleta = async (req, res, next) => {
 
     // Crear pago
     const pago = await Pago.create({
-      usuario: req.user.id,
       monto: localidad.precio_base,
       metodo_pago: metodo_pago.toUpperCase(),
       estado: 'EXITOSO',
@@ -130,7 +128,6 @@ export const comprarBoleta = async (req, res, next) => {
       usuario: req.user.id,
       partido,
       silla: silla._id,
-      precio_total: localidad.precio_base,
       pago: pago._id,
       codigo_qr: `QR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     });
@@ -164,7 +161,14 @@ export const getHistorial = async (req, res, next) => {
       })
       .sort({ fecha_compra: -1 });
 
-    res.json(boletas);
+    // Calcular precio_total para cada boleta
+    const boletasConPrecio = boletas.map(boleta => {
+      const boletaObj = boleta.toObject();
+      boletaObj.precio_total = boleta.silla?.localidad?.precio_base || 0;
+      return boletaObj;
+    });
+
+    res.json(boletasConPrecio);
   } catch (error) {
     next(error);
   }

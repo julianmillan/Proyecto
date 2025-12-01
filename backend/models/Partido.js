@@ -36,9 +36,6 @@ const partidoSchema = new mongoose.Schema({
   imagen: {
     type: String
   },
-  descripcion: {
-    type: String
-  },
   // Campos para simulación de partidos
   simulado: {
     type: Boolean,

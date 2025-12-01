@@ -16,10 +16,6 @@ const boletaSchema = new mongoose.Schema({
     ref: 'Silla',
     required: true
   },
-  precio_total: {
-    type: Number,
-    required: true
-  },
   estado: {
     type: String,
     enum: ['ACTIVA', 'USADA', 'CANCELADA'],
@@ -39,7 +35,24 @@ const boletaSchema = new mongoose.Schema({
     ref: 'Pago'
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual para calcular precio_total desde la localidad
+boletaSchema.virtual('precio_total').get(async function() {
+  if (this.populated('silla') && this.silla.populated('localidad')) {
+    return this.silla.localidad.precio_base;
+  }
+  // Si no está populado, necesitamos hacer populate
+  const boleta = await this.model('Boleta')
+    .findById(this._id)
+    .populate({
+      path: 'silla',
+      populate: { path: 'localidad' }
+    });
+  return boleta?.silla?.localidad?.precio_base || 0;
 });
 
 // Generar código QR único

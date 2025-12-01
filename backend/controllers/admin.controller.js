@@ -37,8 +37,20 @@ export const getBoletasAdmin = async (req, res, next) => {
     const boletas = await Boleta.find()
       .populate('usuario', 'nombre email')
       .populate('partido', 'equipo_local equipo_visitante fecha')
+      .populate({
+        path: 'silla',
+        populate: { path: 'localidad' }
+      })
       .sort({ fecha_compra: -1 });
-    res.json(boletas);
+    
+    // Calcular precio_total para cada boleta
+    const boletasConPrecio = boletas.map(boleta => {
+      const boletaObj = boleta.toObject();
+      boletaObj.precio_total = boleta.silla?.localidad?.precio_base || 0;
+      return boletaObj;
+    });
+    
+    res.json(boletasConPrecio);
   } catch (error) {
     next(error);
   }
@@ -264,71 +276,73 @@ export const getReporteVentas = async (req, res, next) => {
     // Total de boletas vendidas
     const totalBoletas = await Boleta.countDocuments({ estado: { $in: ['ACTIVA', 'USADA'] } });
     
-    // Ingresos totales
-    const ingresosTotales = await Boleta.aggregate([
-      { $match: { estado: { $in: ['ACTIVA', 'USADA'] } } },
-      { $group: { _id: null, total: { $sum: '$precio_total' } } }
-    ]);
+    // Ingresos totales (calculando desde localidad.precio_base)
+    const boletasVendidas = await Boleta.find({ estado: { $in: ['ACTIVA', 'USADA'] } })
+      .populate({
+        path: 'silla',
+        populate: { path: 'localidad' }
+      });
+    
+    const ingresosTotales = boletasVendidas.reduce((sum, boleta) => {
+      return sum + (boleta.silla?.localidad?.precio_base || 0);
+    }, 0);
 
-    // Ventas por partido
-    const ventasPorPartido = await Boleta.aggregate([
-      { $match: { estado: { $in: ['ACTIVA', 'USADA'] } } },
-      {
-        $group: {
-          _id: '$partido',
-          cantidad: { $count: {} },
-          ingresos: { $sum: '$precio_total' }
-        }
-      },
-      {
-        $lookup: {
-          from: 'partidos',
-          localField: '_id',
-          foreignField: '_id',
-          as: 'partidoInfo'
-        }
-      },
-      { $unwind: '$partidoInfo' },
-      { $sort: { ingresos: -1 } },
-      { $limit: 10 }
-    ]);
+    // Ventas por partido (calculando desde localidad)
+    const boletasPorPartido = await Boleta.find({ estado: { $in: ['ACTIVA', 'USADA'] } })
+      .populate('partido')
+      .populate({
+        path: 'silla',
+        populate: { path: 'localidad' }
+      });
+    
+    const ventasPorPartidoMap = {};
+    boletasPorPartido.forEach(boleta => {
+      const partidoId = boleta.partido._id.toString();
+      if (!ventasPorPartidoMap[partidoId]) {
+        ventasPorPartidoMap[partidoId] = {
+          _id: boleta.partido._id,
+          partidoInfo: boleta.partido,
+          cantidad: 0,
+          ingresos: 0
+        };
+      }
+      ventasPorPartidoMap[partidoId].cantidad++;
+      ventasPorPartidoMap[partidoId].ingresos += boleta.silla?.localidad?.precio_base || 0;
+    });
+    
+    const ventasPorPartido = Object.values(ventasPorPartidoMap)
+      .sort((a, b) => b.ingresos - a.ingresos)
+      .slice(0, 10);
 
-    // Ventas por localidad
-    const ventasPorLocalidad = await Boleta.aggregate([
-      { $match: { estado: { $in: ['ACTIVA', 'USADA'] } } },
-      {
-        $lookup: {
-          from: 'sillas',
-          localField: 'silla',
-          foreignField: '_id',
-          as: 'sillaInfo'
-        }
-      },
-      { $unwind: '$sillaInfo' },
-      {
-        $lookup: {
-          from: 'localidads',
-          localField: 'sillaInfo.localidad',
-          foreignField: '_id',
-          as: 'localidadInfo'
-        }
-      },
-      { $unwind: '$localidadInfo' },
-      {
-        $group: {
-          _id: '$localidadInfo.nombre',
-          cantidad: { $count: {} },
-          ingresos: { $sum: '$precio_total' }
-        }
-      },
-      { $sort: { ingresos: -1 } }
-    ]);
+    // Ventas por localidad (calculando desde localidad.precio_base)
+    const boletasPorLocalidad = await Boleta.find({ estado: { $in: ['ACTIVA', 'USADA'] } })
+      .populate({
+        path: 'silla',
+        populate: { path: 'localidad' }
+      });
+    
+    const ventasPorLocalidadMap = {};
+    boletasPorLocalidad.forEach(boleta => {
+      const localidadNombre = boleta.silla?.localidad?.nombre || 'Sin localidad';
+      if (!ventasPorLocalidadMap[localidadNombre]) {
+        ventasPorLocalidadMap[localidadNombre] = {
+          _id: localidadNombre,
+          cantidad: 0,
+          ingresos: 0
+        };
+      }
+      ventasPorLocalidadMap[localidadNombre].cantidad++;
+      ventasPorLocalidadMap[localidadNombre].ingresos += boleta.silla?.localidad?.precio_base || 0;
+    });
+    
+    const ventasPorLocalidad = Object.values(ventasPorLocalidadMap)
+      .sort((a, b) => b.ingresos - a.ingresos);
 
     res.json({
       success: true,
       reporte: {
         totalBoletas,
-        ingresosTotales: ingresosTotales[0]?.total || 0,
+        ingresosTotales,
         ventasPorPartido,
         ventasPorLocalidad
       }
