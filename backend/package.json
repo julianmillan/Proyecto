@@ -8,7 +8,11 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "seed": "node seed.js",
-    "seed:estadios": "node seed-estadios.js"
+    "seed:estadios": "node seed-estadios.js",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "eslint . --ext .js --fix",
+    "test": "node --test",
+    "test:coverage": "node --test --coverage"
   },
   "keywords": [
     "express",
@@ -31,6 +35,10 @@
     "mongoose": "^8.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "nodemon": "^3.0.2",
+    "eslint": "^8.45.0",
+    "prettier": "^2.8.8",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-prettier": "^4.2.1"
   }
 }

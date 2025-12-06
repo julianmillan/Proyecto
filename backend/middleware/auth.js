@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { AppError } from './errorHandler.js';
 
+// Use an indirection for jwt.verify so tests can replace it via `__setJwtVerify`
+let verifyJwt = jwt.verify;
+export const __setJwtVerify = (fn) => { verifyJwt = fn; };
+
 export const protect = async (req, res, next) => {
   try {
     let token;
@@ -13,10 +17,13 @@ export const protect = async (req, res, next) => {
       throw new AppError('No autorizado, token no encontrado', 401);
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = verifyJwt(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
   } catch (error) {
+    // Log the original error for diagnostics and include it as cause when supported
+    console.error('Protect middleware error:', error);
+    // If AppError supported a cause property in the future, we could pass it.
     next(new AppError('No autorizado, token inválido', 401));
   }
 };
